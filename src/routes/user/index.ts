@@ -1,9 +1,12 @@
-import fp from 'fastify-plugin'
-import { CreateUser, CreateUserOpts, GetAllUsersOpts } from './user.schema'
-import { CreateUserHandler, GetAllUsershandler } from './user.handler'
+import { CreateUser, CreateUserOpts, GetAllUsersOpts, UpdateUser, UpdateUserOpts, UpdateUserRole, UpdateUserRoleReqOpt } from './user.schema'
+import { CreateUserHandler, GetAllUsershandler, UpdateUserHandler, UpdateUserRoleHandler } from './user.handler'
+import { FastifyPluginAsync } from 'fastify';
 
 
-export default fp((fastify, opts)=>{
+const userRoute: FastifyPluginAsync=(async(fastify, opts)=>{
     fastify.get('/getAllUsers', GetAllUsersOpts, GetAllUsershandler);
-    fastify.post<CreateUser>('/createUser', CreateUserOpts, CreateUserHandler)
-})
+    fastify.post<CreateUser>('/createUser', CreateUserOpts, CreateUserHandler);
+    fastify.put<UpdateUser>('/updateUser', UpdateUserOpts, UpdateUserHandler);
+    fastify.post<UpdateUserRole>('/updateUserRole', UpdateUserRoleReqOpt,UpdateUserRoleHandler);
+});
+export default userRoute;

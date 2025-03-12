@@ -9,11 +9,6 @@ import FastifySwagger from '@fastify/swagger'
 import FastifySwaggerUI from '@fastify/swagger-ui'
 import { API_ROUTE_PREFIX, RELATIVE_DIST_STATIC_FOLDER, SWAGGER_CONFIG_OPTS } from "./utils/config.js";
 import { join } from "path"; 
-//import { fileURLToPath } from "url";
-
-
-//const __filename = fileURLToPath(import.meta.url);
-//const __dirname = dirname(__filename);
 
 export type AppOptions = {
     isAwesomeApp: boolean;

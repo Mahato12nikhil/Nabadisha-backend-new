@@ -2,43 +2,51 @@ import fp from 'fastify-plugin';
 import FastifyMongodb, {FastifyMongoNestedObject, FastifyMongoObject} from '@fastify/mongodb';
 
 export default fp(async (fastify, opts) => {
-  const dbConnUrl = process.env.DB_URL;
-  if (!dbConnUrl) {
-    throw new Error('DB_CONN_URL not found.');
-  }
+    const dbConnUrl = process.env.DB_URL;
+    if (!dbConnUrl) {
+      throw new Error('DB_CONN_URL not found.');
+    }
 
-  fastify.register(FastifyMongodb, {
-    forceClose: true,
-    url: dbConnUrl,
+    fastify.register(FastifyMongodb, {
+      forceClose: true,
+      url: dbConnUrl,
+    });
+
+    fastify.addHook('preHandler', (request, reply, done) => {
+      request.mongo = fastify.mongo;
+      request.logToDb=fastify.logToDb;
+      // request.getSequenceNextVal = fastify.getSequenceNextVal;
+      done();
+    });
+
+    //loggin to mongoDb
+    fastify.decorate('logToDb',async(label?:string, message?:string, metadata?:object)=>{
+      
+      if (!label && !message && !metadata) {
+        return; 
+      }
+     
+      const log={
+        label,
+        message,
+        metadata
+      }
+
+      try{
+        await fastify.mongo.client.db(process.env.DB_NAME).collection('logs').insertOne(log);
+      }
+      catch(err){
+        console.log('failed to update log to database')
+      }
+    })
   });
 
-  fastify.addHook('preHandler', (request, reply, done) => {
-    request.mongo = fastify.mongo;
-    // request.getSequenceNextVal = fastify.getSequenceNextVal;
-    done();
-  });
-//   fastify.decorate('getSequenceNextVal',async(sequenceId:string)=>{
-//     const result = await fastify.mongo.client.db(process.env.DB_PORTFOLIO)
-//     ?.collection<SequenceSchema>(COLL_SEQUENCES)
-//     .findOneAndUpdate(
-//       {_id: sequenceId},
-//       {$inc: {val: 1}},
-//       {upsert: true, returnDocument: 'after'},
-//     );
-//     if (result?.val) {
-//       return result.val;
-//     }
-//     throw new Error('not able to get next sequence value');
-//     })
-  });
-
-// When using .decorate you have to specify added properties for Typescript
 declare module 'fastify' {
   export interface FastifyRequest {
     mongo: FastifyMongoObject & FastifyMongoNestedObject;
-    //getSequenceNextVal: (sequenceId: string) => Promise<number>;
+    logToDb(label?: string, message?: string, metadata?: object):void;
   }
   export interface FastifyInstance {
-   // getSequenceNextVal(sequenceId: string): Promise<number>;
+    logToDb(label?: string, message?: string, metadata?: object):void;
   }
 }
