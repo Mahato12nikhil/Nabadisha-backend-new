@@ -71,7 +71,7 @@ declare module '@fastify/jwt' {
 }
 declare module 'fastify'{
     export interface FastifyRequest{
-      generateToken(username: string): string;
+      generateToken(username: string, role:string): string;
       generateRefreshToken(username: string): string;
       getUserNameFromToken(token: string): string;
 

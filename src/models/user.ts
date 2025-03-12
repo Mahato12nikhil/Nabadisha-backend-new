@@ -3,6 +3,7 @@ import { ObjectId } from "@fastify/mongodb";
 export interface UserSchema{
     name: string,
     username:string,
+    password:string,
     phone: string,
     isActive:boolean,
     userPic:string,

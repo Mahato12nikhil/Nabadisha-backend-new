@@ -1,8 +1,9 @@
 import {  FastifyReply, FastifyRequest } from "fastify"
 import { COLL_USERS } from "../../utils/constants"
 import {  ObjectId } from "@fastify/mongodb";
-import { CreateUser, UpdateUser, UpdateUserRole } from "./user.schema";
+import { CreateUser, Login, UpdateUser, UpdateUserRole } from "./user.schema";
 import { UserSchema } from "../../models/user";
+import bcrypt from 'bcryptjs'
 
 const DB=process.env.DB_NAME;
 
@@ -49,7 +50,7 @@ const CreateUserHandler = async (req: CrtUsrRqst, res: FastifyReply) => {
     try {
         const collUser = req?.mongo.client.db(process.env.DB_NAME).collection(COLL_USERS);
 
-        const { name, username, phone, isActive, role, socials, userPic, createdAt, updatedAt, updatedBy } = req.body;       
+        const { name, username, password, phone, isActive, role, socials, userPic, createdAt, updatedAt, updatedBy } = req.body;       
 
         const existingUser = await collUser.findOne({ username });
         if (existingUser) {
@@ -59,6 +60,8 @@ const CreateUserHandler = async (req: CrtUsrRqst, res: FastifyReply) => {
                 message: "Username already taken.",
             });
         }
+
+        const encryptedPassword = req.encryptPassword(password);
 
         // Check if phone number already exists
         const existingPhone = await collUser.findOne({ phone });
@@ -82,6 +85,7 @@ const CreateUserHandler = async (req: CrtUsrRqst, res: FastifyReply) => {
         const userData : UserSchema= {
             name,
             username,
+            password:encryptedPassword,
             phone,
             isActive,
             userPic:userPic,
@@ -201,14 +205,14 @@ export const UpdateUserRoleHandler = async (request: UpdtUsrRoleReq, reply: Fast
     }
 
     // Extract username from token
-    const username = request.getUserNameFromToken(token);
+    const author = request.getUserNameFromToken(token);
 
-    if (!username) {
+    if (!author) {
       return reply.status(401).send({ success: false, message: "Invalid token" });
     }
 
     // Extract role from request body
-    const { role } = request.body;
+    const { role, username } = request.body;
 
     // Access MongoDB Collection
     const collUser = request.mongo.client.db(process.env.DB_NAME).collection(COLL_USERS);
@@ -217,6 +221,11 @@ export const UpdateUserRoleHandler = async (request: UpdtUsrRoleReq, reply: Fast
       return reply.status(500).send({ success: false, message: "Database connection failed" });
     }
 
+    const user=await collUser.findOne({username})
+
+    if(user?.role!=='admin'){
+        return reply.status(401).send({ success: false, message: "User not authorised to update." });
+    }
     // Update user role
     const updateResult = await collUser.updateOne({ username }, { $set: { role } });
 
@@ -231,6 +240,58 @@ export const UpdateUserRoleHandler = async (request: UpdtUsrRoleReq, reply: Fast
   }
 };
 
+type LoginReq = FastifyRequest<Login>;
 
-export {GetAllUsershandler, CreateUserHandler, UpdateUserHandler}
+const LoginHandler = async (req: LoginReq, res: FastifyReply) => {
+    try {
+        const collUser = req?.mongo.client.db(process.env.DB_NAME).collection(COLL_USERS);
+
+        const { username, password } = req.body;
+
+        // Find user by username
+        const user = await collUser.findOne({ username });
+
+        if (!user) {
+            req.logToDb("LoginHandler", "Invalid username", { username });
+            return res.status(401).send({
+                success: false,
+                message: "Invalid username or password.",
+            });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            req.logToDb("LoginHandler", "Invalid password", { username });
+            return res.status(401).send({
+                success: false,
+                message: "Invalid username or password.",
+            });
+        }
+
+        const token =req.generateToken(username, user.role);
+        const refreshToken=req.generateRefreshToken(username);
+        req.logToDb("LoginHandler", "User logged in successfully", { username });
+
+        return res.status(200).send({
+            success: true,
+            message: "Login successful.",
+            token,
+            refreshToken,
+            user: {
+                id: user._id,
+                username: user.username,
+                role: user.role,
+            },
+        });
+
+    } catch (err) {
+        req.logToDb("LoginHandler", "Unknown error occurred", { err });
+        return res.status(500).send({
+            success: false,
+            message: "Unknown error occurred.",
+        });
+    }
+};
+export {GetAllUsershandler, CreateUserHandler, UpdateUserHandler, LoginHandler}
 

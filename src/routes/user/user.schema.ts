@@ -63,6 +63,7 @@ interface CreateUser {
   Body: {
     name: string;
     username: string;
+    password:string,
     phone: string;
     isActive: boolean;
     userPic: string;
@@ -82,10 +83,11 @@ const CreateUserOpts: RouteShorthandOptions = {
   schema: {
     body: {
       type: 'object',
-      required: ['name', 'username', 'phone', 'isActive', 'role', 'createdAt', 'updatedAt', 'updatedBy'],
+      required: ['name', 'username', 'phone', 'isActive', 'role', 'password', 'createdAt', 'updatedAt', 'updatedBy'],
       properties: {
         name: { type: 'string' },
         username: { type: 'string', minLength: 7 },
+        password:{type:'string'},
         phone: { type: 'string' },
         isActive: { type: 'boolean' },
         userPic:{ type: 'string', format: 'uri' },
@@ -205,7 +207,7 @@ const UpdateUserOpts: RouteShorthandOptions = {
 interface UpdateUserRole{Body:{username:string,role:string}}
 const UpdateUserRoleReqOpt: RouteShorthandOptions={
   schema:{
-    description: 'API to update FCM token for the user in the database',
+    description: 'API to update user Role',
     headers: {
       type: 'object',
       required: ['authorization'],
@@ -218,6 +220,7 @@ const UpdateUserRoleReqOpt: RouteShorthandOptions={
       required:['role'],
       properties:{
         role:{type:'string'},
+        username:{type:'string'}
       }
     },
     response:{
@@ -232,5 +235,46 @@ const UpdateUserRoleReqOpt: RouteShorthandOptions={
     }
   }
 }
-export { GetAllUsersOpts, CreateUserOpts, UpdateUserOpts, UpdateUserRoleReqOpt };
-export type { CreateUser, UpdateUser, UpdateUserRole };
+
+interface Login{
+  Body:{
+    username:string,
+    password:string
+  }
+}
+const LoginReqOpts: RouteShorthandOptions = {
+  schema: {
+    description: "API to authenticate user and return JWT token",
+    body: {
+      type: "object",
+      required: ["username", "password"],
+      properties: {
+        username: { type: "string", minLength: 5 },
+        password: { type: "string", minLength: 8 }, 
+      },
+    },
+    response: {
+      200: {
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          token: { type: "string" },
+          refreshToken: { type: "string" },
+          message: { type: "string" },
+        },
+        required: ["success", "token", "refreshToken", "message"],
+      },
+      401: {
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+        required: ["success", "message"],
+      },
+    },
+  },
+};
+
+export { GetAllUsersOpts, CreateUserOpts, UpdateUserOpts, UpdateUserRoleReqOpt, LoginReqOpts };
+export type { CreateUser, UpdateUser, UpdateUserRole, Login };
