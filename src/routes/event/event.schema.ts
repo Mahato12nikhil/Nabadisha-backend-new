@@ -43,12 +43,14 @@ const CreateEventReqOpts: RouteShorthandOptions = {
         "endDate",
         "eventManagement",
       ],
-      name: { type: "string" },
-      description: { type: "string" },
-      eventImages: { type: "array", items: { type: "string", format: "uri" } },
-      startDate: { type: "number" },
-      endDate: { type: "number" },
-      eventManagement: EventManagementReqOpts ,
+      properties:{
+        name: { type: "string" },
+        description: { type: "string" },
+        eventImages: { type: "array", items: { type: "string", format: "uri" } },
+        startDate: { type: "number" },
+        endDate: { type: "number" },
+        eventManagement: EventManagementReqOpts ,
+      }
     },
   },
 };
@@ -79,13 +81,15 @@ export interface UpdateEvent {
         required: [
           "eventId",
         ],
-        eventId:{type:'string' , pattern: "^[a-fA-F0-9]{24}$"},
-        name: { type: "string" },
-        description: { type: "string" },
-        eventImages: { type: "array", items: { type: "string", format: "uri" } },
-        startDate: { type: "number" },
-        endDate: { type: "number" },
-        eventManagement: EventManagementReqOpts ,
+        properties:{
+            eventId:{type:'string' , pattern: "^[a-fA-F0-9]{24}$"},
+            name: { type: "string" },
+            description: { type: "string" },
+            eventImages: { type: "array", items: { type: "string", format: "uri" } },
+            startDate: { type: "number" },
+            endDate: { type: "number" },
+            eventManagement: EventManagementReqOpts ,
+        }
       },
     },
   };

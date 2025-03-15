@@ -1,4 +1,3 @@
-import { ObjectId } from "@fastify/mongodb";
 
 export interface UserSchema{
     name: string,

@@ -3,11 +3,11 @@ import { CreateUserHandler, GetAllUsershandler, LoginHandler, UpdateUserHandler,
 import { FastifyPluginAsync } from 'fastify';
 
 
-const userRoute: FastifyPluginAsync=(async(fastify, opts)=>{
+const userRoute: FastifyPluginAsync=async(fastify, opts)=>{
     fastify.get('/getAllUsers', GetAllUsersOpts, GetAllUsershandler);
     fastify.post<CreateUser>('/createUser', CreateUserOpts, CreateUserHandler);
     fastify.put<UpdateUser>('/updateUser', UpdateUserOpts, UpdateUserHandler);
     fastify.post<UpdateUserRole>('/updateUserRole', UpdateUserRoleReqOpt,UpdateUserRoleHandler);
     fastify.post<Login>('/login',LoginReqOpts, LoginHandler);
-});
+};
 export default userRoute;

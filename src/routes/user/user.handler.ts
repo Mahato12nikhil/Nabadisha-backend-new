@@ -175,7 +175,7 @@ const UpdateUserHandler = async (req: UpdtUsrRqst, res: FastifyReply) => {
       .db(process.env.DB_NAME)
       .collection(COLL_USERS);
 
-    const { name, userPic, socials, updatedAt, updatedBy, username } = req.body;
+    const { name, userPic, socials, updatedAt, username } = req.body;
 
     const user = await collUser.findOne({ username });
     if (!user) {
