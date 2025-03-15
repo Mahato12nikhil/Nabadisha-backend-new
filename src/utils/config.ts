@@ -33,10 +33,8 @@ export const SWAGGER_CONFIG_OPTS: SwaggerOptions = {
 
   export const REFRESH_TOKEN_EXPIRY='90d';
   export const TOKEN_EXPIRY='1d';
-
+  export const DEFAULT_PAGE_SIZE=10;
   export const  UNPROTECTED_ROUTES: RouteName[]=[
     {method: 'GET', url: '/api/v1/user/getAllUsers'},
-    {method: 'POST', url: '/api/v1/user/createUser'},
-    {method: 'PUT', url: '/api/v1/user/updateUser'},
-
+    {method: 'POST', url: '/api/v1/user/login'},
   ]

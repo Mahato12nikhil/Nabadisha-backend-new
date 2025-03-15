@@ -35,7 +35,7 @@ const GetAllUsershandler=async(req : FastifyRequest,res : FastifyReply)=>{
         }
     }
     catch(err){
-        req.logToDb('GetAllUsershandler','unknown error occurred',{err});
+        req.logToDb('GetAllUsershandler','unknown error occurred',JSON.stringify({err}));
         return {
             success:false,
             message: 'unknown error occured.'
@@ -48,32 +48,38 @@ type CrtUsrRqst= FastifyRequest<CreateUser>;
 
 const CreateUserHandler = async (req: CrtUsrRqst, res: FastifyReply) => {
     try {
+    
         const collUser = req?.mongo.client.db(process.env.DB_NAME).collection(COLL_USERS);
 
-        const { name, username, password, phone, isActive, role, socials, userPic, createdAt, updatedAt, updatedBy } = req.body;       
-
+        const { name, username, password, phone, isActive, role, socials, userPic, updatedBy } = req.body;       
+        
+        if (!req.user?.role) {
+            return res.status(401).send({ success: false, message: "You are not authorised to create user." });
+          }
+      
         const existingUser = await collUser.findOne({ username });
         if (existingUser) {
-            req.logToDb('CreateUserHandler','existing user',{username, phone});
+            req.logToDb('CreateUserHandler','existing user',{username, phone}.toString());
             return res.status(409).send({
                 success: false,
                 message: "Username already taken.",
             });
         }
 
+        //encrypt the password
         const encryptedPassword = req.encryptPassword(password);
 
         // Check if phone number already exists
         const existingPhone = await collUser.findOne({ phone });
         if (existingPhone) {
 
-            req.logToDb('CreateUserHandler','existing user',{phone, username});
+            req.logToDb('CreateUserHandler','existing user',JSON.stringify({phone, username}));
             return res.status(409).send({
                 success: false,
                 message: "User with this phone number already exists.",
             });
         }
-
+ 
         const sanitizedSocials = {
             facebook: socials?.facebook || "",  
             instagram: socials?.instagram || "",
@@ -81,6 +87,9 @@ const CreateUserHandler = async (req: CrtUsrRqst, res: FastifyReply) => {
         };
 
         //userPicUrl=userPicUrl?userPicUrl:"";
+
+       const createdAt = req.getCurrentTimestamp();
+       const updatedAt = req.getCurrentTimestamp();
 
         const userData : UserSchema= {
             name,
@@ -100,22 +109,23 @@ const CreateUserHandler = async (req: CrtUsrRqst, res: FastifyReply) => {
         const result = await collUser.insertOne(userData);
 
         if (!result.insertedId) {
-            req.logToDb('CreateUserHandler','Unknown error occurred while creating the user.',{username, phone});
+            req.logToDb('CreateUserHandler','Unknown error occurred while creating the user.',{username, phone}.toString());
             return res.status(500).send({
                 success: false,
                 message: "Unknown error occurred while creating the user.",
             });
         }
 
-        req.logToDb('CreateUserHandler','user created successfully.',{username, result});
+        req.logToDb('CreateUserHandler','user created successfully.',{username, result}.toString());
         return res.status(200).send({
             success: true,
             message: "User created successfully.",
             userId: result.insertedId.toString(),
         });
 
-    } catch (err) {
-        req.logToDb('CreateUserHandler','Unknown error occurred',{err});
+    } catch (err:any) {
+        req.logToDb('CreateUserHandler','Unknown error occurred',err.toString);
+        console.log(err)
         return res.status(500).send({
             success: false,
             message: "Unknown error occurred.",
@@ -135,7 +145,7 @@ const UpdateUserHandler = async (req: UpdtUsrRqst, res: FastifyReply) => {
         if (!user) {
             const msg="User doesn't exist."
 
-            req.logToDb('UpdateUserHandler',msg,{username});
+            req.logToDb('UpdateUserHandler',msg,JSON.stringify({username}));
 
             return res.status(404).send({
                 success: false,
@@ -161,7 +171,7 @@ const UpdateUserHandler = async (req: UpdtUsrRqst, res: FastifyReply) => {
         if (result.modifiedCount === 0) {
             const msg="User update failed. No changes were made."
 
-            req.logToDb('UpdateUserHandler',msg,{userData});
+            req.logToDb('UpdateUserHandler',msg,JSON.stringify({userData}));
 
             return res.status(400).send({
                 success: false,
@@ -169,15 +179,15 @@ const UpdateUserHandler = async (req: UpdtUsrRqst, res: FastifyReply) => {
             });
         }
         const msg="User updated successfully.";
-        req.logToDb('UpdateUserHandler',msg,{userData});
+        req.logToDb('UpdateUserHandler',msg,JSON.stringify({userData}));
 
         return res.status(200).send({
             success: true,
             message: msg,
         });
-    } catch (err) {
+    } catch (err:any) {
         const msg="Unknown error occurred.";
-        req.logToDb('UpdateUserHandler',msg,{err});
+        req.logToDb('UpdateUserHandler',msg,JSON.stringify({err}));
         return res.status(500).send({
             success: false,
             message: msg,
@@ -190,25 +200,9 @@ type UpdtUsrRoleReq = FastifyRequest<UpdateUserRole>;
 
 export const UpdateUserRoleHandler = async (request: UpdtUsrRoleReq, reply: FastifyReply) => {
   try {
-    // Extract Authorization header
-    const authHeader = request.headers.authorization;
-
-    if (!authHeader) {
-      return reply.status(401).send({ success: false, message: "Authorization header missing" });
-    }
-
-    // Extract token from Bearer format
-    const token = authHeader.split(" ")[1];
-
-    if (!token) {
-      return reply.status(401).send({ success: false, message: "Invalid Authorization header format" });
-    }
-
-    // Extract username from token
-    const author = request.getUserNameFromToken(token);
-
-    if (!author) {
-      return reply.status(401).send({ success: false, message: "Invalid token" });
+   
+    if (!request.user?.role) {
+      return reply.status(401).send({ success: false, message: "You are not authorised to update." });
     }
 
     // Extract role from request body
@@ -234,8 +228,8 @@ export const UpdateUserRoleHandler = async (request: UpdtUsrRoleReq, reply: Fast
     }
 
     return reply.send({ success: true, message: "User role updated successfully" });
-  } catch (err) {
-    request.logToDb("UpdateUserRoleHandler", "unknown error", { err });
+  } catch (err:any) {
+    request.logToDb("UpdateUserRoleHandler", "unknown error",JSON.stringify( {err}));
     return reply.status(500).send({ success: false, message: "Unknown error occurred" });
   }
 };
@@ -252,7 +246,7 @@ const LoginHandler = async (req: LoginReq, res: FastifyReply) => {
         const user = await collUser.findOne({ username });
 
         if (!user) {
-            req.logToDb("LoginHandler", "Invalid username", { username });
+            req.logToDb("LoginHandler", "Invalid username", JSON.stringify({ username }));
             return res.status(401).send({
                 success: false,
                 message: "Invalid username or password.",
@@ -262,7 +256,7 @@ const LoginHandler = async (req: LoginReq, res: FastifyReply) => {
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
-            req.logToDb("LoginHandler", "Invalid password", { username });
+            req.logToDb("LoginHandler", "Invalid password", JSON.stringify({ username }));
             return res.status(401).send({
                 success: false,
                 message: "Invalid username or password.",
@@ -271,7 +265,7 @@ const LoginHandler = async (req: LoginReq, res: FastifyReply) => {
 
         const token =req.generateToken(username, user.role);
         const refreshToken=req.generateRefreshToken(username);
-        req.logToDb("LoginHandler", "User logged in successfully", { username });
+        req.logToDb("LoginHandler", "User logged in successfully", JSON.stringify({ username }));
 
         return res.status(200).send({
             success: true,
@@ -286,7 +280,7 @@ const LoginHandler = async (req: LoginReq, res: FastifyReply) => {
         });
 
     } catch (err) {
-        req.logToDb("LoginHandler", "Unknown error occurred", { err });
+        req.logToDb("LoginHandler", "Unknown error occurred", JSON.stringify({ err }));
         return res.status(500).send({
             success: false,
             message: "Unknown error occurred.",

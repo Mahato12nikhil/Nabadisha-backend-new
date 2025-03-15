@@ -81,6 +81,14 @@ interface CreateUser {
 
 const CreateUserOpts: RouteShorthandOptions = {
   schema: {
+    security: [{ bearerAuth: [] }],
+    headers:{
+      type:'object',
+      required:['authorization'],
+      properties:{
+        authorization:{type:'string'}
+      }
+    },
     body: {
       type: 'object',
       required: ['name', 'username', 'phone', 'isActive', 'role', 'password', 'createdAt', 'updatedAt', 'updatedBy'],
@@ -175,6 +183,7 @@ const UpdateUserOpts: RouteShorthandOptions = {
         updatedBy: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
       },
     },
+    security: [{ bearerAuth: [] }],
     response: {
       200: {
         type: "object",
@@ -215,6 +224,7 @@ const UpdateUserRoleReqOpt: RouteShorthandOptions={
         authorization: {type: 'string', minLength: 1},
       },
     },
+    security: [{ bearerAuth: [] }],
     body:{
       type: 'object',
       required:['role'],
@@ -272,6 +282,14 @@ const LoginReqOpts: RouteShorthandOptions = {
         },
         required: ["success", "message"],
       },
+      500:{
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+        required:['message', 'success']
+      }
     },
   },
 };

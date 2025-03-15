@@ -20,7 +20,7 @@ export default fp(async (fastify, opts) => {
     });
 
     //loggin to mongoDb
-    fastify.decorate('logToDb',async(label?:string, message?:string, metadata?:object)=>{
+    fastify.decorate('logToDb',async(label?:string, message?:string, metadata?:string)=>{
       
       if (!label && !message && !metadata) {
         return; 
@@ -29,7 +29,8 @@ export default fp(async (fastify, opts) => {
       const log={
         label,
         message,
-        metadata
+        metadata,
+        timestamp:new Date().getTime()
       }
 
       try{
@@ -44,9 +45,9 @@ export default fp(async (fastify, opts) => {
 declare module 'fastify' {
   export interface FastifyRequest {
     mongo: FastifyMongoObject & FastifyMongoNestedObject;
-    logToDb(label?: string, message?: string, metadata?: object):void;
+    logToDb(label?: string, message?: string, metadata?: string):void;
   }
   export interface FastifyInstance {
-    logToDb(label?: string, message?: string, metadata?: object):void;
+    logToDb(label?: string, message?: string, metadata?: string):void;
   }
 }

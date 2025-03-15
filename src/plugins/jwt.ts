@@ -36,7 +36,7 @@ export default fp(async(fastify, opts)=>{
       }
       catch(err){
        fastify.logToDb('token','failed to generate token--->'+err);
-       return null;
+       return '';
       }
     });
 
@@ -46,18 +46,18 @@ export default fp(async(fastify, opts)=>{
       }
       catch(err){
        fastify.logToDb('token','failed to generate refreshToken--->'+err);
-       return null;
+       return '';
       }
     });
-    fastify.decorate('getUserNameFromToken', (token: string): string => {
-      try {
-        const data = fastify.jwt.decode<{username: string}>(token);
-        return data?.username ||"";
-      } catch (err) {
-        return "";
-      }
+
+    fastify.addHook('preHandler', (request, reply, done) => {
+      request.generateToken = fastify.generateToken;
+      request.generateRefreshToken = fastify.generateRefreshToken;
+      request.getUserNameFromToken = fastify.getUserNameFromToken;
+      done();
     });
 });
+
 
 export interface JWTPayload{
     username:string,
@@ -78,8 +78,8 @@ declare module 'fastify'{
     }
     export interface FastifyInstance {
       authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
-      generateToken(username: string, role:string): string | null;
-      generateRefreshToken(username: string): string | null;
+      generateToken(username: string, role:string): string ;
+      generateRefreshToken(username: string): string;
       getUserNameFromToken(token: string): string;
     }
   }
