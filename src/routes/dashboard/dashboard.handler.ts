@@ -22,22 +22,7 @@ const PostDashMenuHandler = async (
 
     const pipeline = [
       { $match: { name: { $in: roles } } },
-    
-      // Convert permission strings to ObjectId before lookup
-      // {
-      //   $addFields: {
-      //     permissions: {
-      //       $map: {
-      //         input: "$permissions",
-      //         as: "perm",
-      //         in: { $toObjectId: "$$perm" } // Convert string to ObjectId
-      //       }
-      //     }
-      //   }
-      // },
-    
       { $unwind: "$permissions" },
-    
       {
         $lookup: {
           from: COLL_PERMISSIONS,
