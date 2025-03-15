@@ -79,7 +79,7 @@ const CreatePermissionHandler = async (
     if (result.acknowledged) {
       return reply.send({
         success: true,
-        data: result.insertedId, // ✅ Return inserted ID
+        data: result.insertedId, 
         message: "Permission created successfully",
       });
     } else {
