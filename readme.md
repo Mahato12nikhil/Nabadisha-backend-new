@@ -19,8 +19,8 @@ To set up the project locally, follow these steps:
 ### Steps
 ```sh
 # Clone the repository
-git clone https://github.com/your-repo/nabadisha-backend.git
-cd nabadisha-backend
+git clone https://github.com/Mahato12nikhil/Nabadisha-backend-new.git
+cd Nabadisha-backend-new
 
 # Install dependencies
 npm install
