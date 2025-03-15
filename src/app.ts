@@ -39,7 +39,7 @@ export type AppOptions = {
     fastify.register(FastifySwaggerUI, {
         routePrefix: "/docs",
         uiConfig: {
-            docExpansion: "full",
+            docExpansion: "none",
             deepLinking: false,
         },
         staticCSP: true,

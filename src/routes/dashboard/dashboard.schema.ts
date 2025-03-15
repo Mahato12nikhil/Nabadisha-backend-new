@@ -10,6 +10,7 @@ export interface PostDashQuery {
 }
 const PostDashMenuReq: RouteShorthandOptions = {
   schema: {
+    tags:['Dashboard'],
     body: {
       type: 'object',
       required: ['roles'],

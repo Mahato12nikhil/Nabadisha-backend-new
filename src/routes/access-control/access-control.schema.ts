@@ -11,6 +11,7 @@ export interface CreateRole {
 }
 export const CreateRoleOpts: RouteShorthandOptions = {
   schema: {
+    tags:['Access control'],
     headers: {
       type: 'object',
       required: ['authorization'],
@@ -46,6 +47,7 @@ export interface CreatePermission{
 }
 export const CreatePermissionReqOpts:RouteShorthandOptions={
   schema:{
+    tags:['Access control'],
     headers: {
       type: 'object',
       required: ['authorization'],

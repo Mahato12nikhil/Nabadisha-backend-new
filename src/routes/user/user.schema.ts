@@ -35,6 +35,7 @@ const UserOpts = {
 
 const GetAllUsersOpts: RouteShorthandOptions = {
   schema: {
+    tags:['User'],
     response: {
       200: {
         type: "object",
@@ -81,6 +82,7 @@ interface CreateUser {
 
 const CreateUserOpts: RouteShorthandOptions = {
   schema: {
+    tags:['User'],
     security: [{ bearerAuth: [] }],
     headers:{
       type:'object',
@@ -163,6 +165,7 @@ interface UpdateUser {
 
 const UpdateUserOpts: RouteShorthandOptions = {
   schema: {
+    tags:['User'],
     body: {
       type: "object",
       required: ["name", "username", "updatedAt", "updatedBy"],
@@ -216,6 +219,7 @@ const UpdateUserOpts: RouteShorthandOptions = {
 interface UpdateUserRole{Body:{username:string,role:string}}
 const UpdateUserRoleReqOpt: RouteShorthandOptions={
   schema:{
+    tags:['User'],
     description: 'API to update user Role',
     headers: {
       type: 'object',
@@ -254,6 +258,7 @@ interface Login{
 }
 const LoginReqOpts: RouteShorthandOptions = {
   schema: {
+    tags:['User'],
     description: "API to authenticate user and return JWT token",
     body: {
       type: "object",
