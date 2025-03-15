@@ -25,10 +25,6 @@ cd Nabadisha-backend-new
 # Install dependencies
 npm install
 
-# Copy environment variables
-cp .env.example .env
-```
-
 ## Environment Variables
 Update the `.env` file with the following variables:
 ```env
