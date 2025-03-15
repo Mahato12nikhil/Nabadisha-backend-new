@@ -78,9 +78,6 @@ http://localhost:5000/docs
 - Admin roles are required for creating roles and permissions.
 - Users need to provide a valid token for restricted actions.
 
-## License
-This project is licensed under the **MIT License**.
-
 ---
 Made by [Nikhil Mahato](https://github.com/Mahato12nikhil) .
 
