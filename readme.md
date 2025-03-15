@@ -24,6 +24,7 @@ cd Nabadisha-backend-new
 
 # Install dependencies
 npm install
+```
 
 ## Environment Variables
 Update the `.env` file with the following variables:
@@ -74,7 +75,5 @@ http://localhost:5000/docs
 - Users need to provide a valid token for restricted actions.
 
 ---
-Made by [Nikhil Mahato](https://github.com/Mahato12nikhil) .
-
-
+Made by [Nikhil Mahato](https://github.com/Mahato12nikhil).
 
