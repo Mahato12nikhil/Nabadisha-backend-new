@@ -32,10 +32,9 @@ cp .env.example .env
 ## Environment Variables
 Update the `.env` file with the following variables:
 ```env
-PORT=
+DB_URL=
 DB_NAME=
-MONGO_URI=
-JWT_SECRET=
+JWT_SECRET_KEY=
 ```
 
 ## Running the Project
