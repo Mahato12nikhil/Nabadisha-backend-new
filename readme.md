@@ -32,10 +32,10 @@ cp .env.example .env
 ## Environment Variables
 Update the `.env` file with the following variables:
 ```env
-PORT=5000
-DB_NAME=nabadisha_db
-MONGO_URI=mongodb://localhost:27017/nabadisha_db
-JWT_SECRET=your_secret_key
+PORT=
+DB_NAME=
+MONGO_URI=
+JWT_SECRET=
 ```
 
 ## Running the Project
@@ -82,5 +82,7 @@ http://localhost:5000/docs
 This project is licensed under the **MIT License**.
 
 ---
-Made with ❤️ by **Nabadisha Sangha**.
+Made by [Nikhil Mahato](https://github.com/Mahato12nikhil) .
+
+
 
