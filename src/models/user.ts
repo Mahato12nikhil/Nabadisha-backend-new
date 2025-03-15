@@ -15,5 +15,6 @@ export interface UserSchema{
     },
     createdAt: number, 
     updatedAt: number,
-    updatedBy:ObjectId
+    createdBy:string,
+    updatedBy:string
 }
