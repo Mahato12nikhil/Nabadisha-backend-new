@@ -22,6 +22,7 @@ export interface CreateEvent {
     eventImages?: string[];
     startDate: number;
     endDate: number;
+    status:string,
     eventManagement: IEventManagement;
     createdAt: number;
     updatedAt: number;
@@ -39,6 +40,7 @@ const CreateEventReqOpts: RouteShorthandOptions = {
       required: [
         "name",
         "description",
+        "status",
         "startDate",
         "endDate",
         "eventManagement",
@@ -47,6 +49,7 @@ const CreateEventReqOpts: RouteShorthandOptions = {
         name: { type: "string" },
         description: { type: "string" },
         eventImages: { type: "array", items: { type: "string", format: "uri" } },
+        status:{type:'string'},
         startDate: { type: "number" },
         endDate: { type: "number" },
         eventManagement: EventManagementReqOpts ,
@@ -63,6 +66,7 @@ export interface UpdateEvent {
       eventId:string,  
       name: string;
       description: string;
+      status:string,
       eventImages?: string[];
       startDate: number;
       endDate: number;
@@ -85,6 +89,7 @@ export interface UpdateEvent {
             eventId:{type:'string' , pattern: "^[a-fA-F0-9]{24}$"},
             name: { type: "string" },
             description: { type: "string" },
+            status:{type:'string'},
             eventImages: { type: "array", items: { type: "string", format: "uri" } },
             startDate: { type: "number" },
             endDate: { type: "number" },
@@ -93,6 +98,37 @@ export interface UpdateEvent {
       },
     },
   };
+  interface CreateExpense {
+    Body:{
+      eventId:string,
+      name: string,
+      description?:string,
+      amount:number
+    }
+  }
+  const CreateExpenseReqOpts: RouteShorthandOptions={
+    schema:{
+      security:[{bearerAuth:[]}],
+      tags:['Events'],
+      headers:{
+        type:'object',
+        required:['authorization'],
+        properties:{
+          authorization: {type : "boolean"}
+        }
+      },
+      body:{
+        type:'object',
+        required:['name', 'amount'],
+        properties:{
+          eventId:{type:'string', pattern: "^[a-fA-F0-9]{24}$"},
+          name:{type:'string'},
+          description:{type:'string'},
+          amount:{type:'number'}
+        }
+      }
+    }
+  }
   
-  
-export { CreateEventReqOpts, UpdateEventReqOpts };
+export { CreateEventReqOpts, UpdateEventReqOpts, CreateExpenseReqOpts };
+export type {CreateExpense}
