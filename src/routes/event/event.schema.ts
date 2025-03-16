@@ -56,7 +56,7 @@ const CreateEventReqOpts: RouteShorthandOptions = {
         name: { type: "string" },
         description: { type: "string" },
         eventImages: { type: "array", items: { type: "string", format: "uri" } },
-        status:{type:'string'},
+        status:{type:'string', enum: ["active", "ended", "inactive"]},
         startDate: { type: "number" },
         endDate: { type: "number" },
         eventManagement: EventManagementReqOpts ,
@@ -103,7 +103,7 @@ export interface UpdateEvent {
             eventId:{type:'string' , pattern: "^[a-fA-F0-9]{24}$"},
             name: { type: "string" },
             description: { type: "string" },
-            status:{type:'string'},
+            status:{type:'string', enum: ["active", "ended", "inactive"]},
             eventImages: { type: "array", items: { type: "string", format: "uri" } },
             startDate: { type: "number" },
             endDate: { type: "number" },
@@ -180,6 +180,6 @@ export interface UpdateEvent {
       }
     }
   }
-  
+
 export { CreateEventReqOpts, UpdateEventReqOpts, CreateExpenseReqOpts, UpdateExpenseReqOpts };
 export type {CreateExpense, UpdateExpense}

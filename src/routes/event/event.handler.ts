@@ -1,7 +1,8 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { CreateEvent, CreateExpense, UpdateEvent, UpdateExpense } from "./event.schema";
-import { COLL_EVENTS, COLL_EXPENSES } from "../../utils/constants";
+import { AddCollection, CreateEvent, CreateExpense, UpdateEvent, UpdateExpense } from "./event.schema";
+import { COLL_CONTRIBUTORS, COLL_EVENTS, COLL_EXPENSES, EventStatus } from "../../utils/constants";
 import { ObjectId } from "@fastify/mongodb";
+import { IEvent } from "../../models/event";
 
 type CrtEvntRequest = FastifyRequest<CreateEvent>;
 const DB = process.env.DB_NAME;
@@ -220,4 +221,81 @@ const UpdateExpenseHandler=async(request: UpdtExpnsReq, reply: FastifyReply)=>{
     })
   }
 } 
-export { CreateEventHandler, UpdateEventHandler, CreateExpenseHandler, UpdateExpenseHandler };
+const GetEventHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+  try {
+    const collEvents = request.mongo.client.db(DB).collection(COLL_EVENTS);
+
+    const status: EventStatus = "active"; 
+    const result = await collEvents.find({ status }).toArray();
+
+    if (result.length === 0) {
+      return reply.status(404).send({
+        success: false,
+        message: "No events found.",
+      });
+    }
+
+    return reply.status(200).send({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    console.error("Error fetching events:", err); 
+    return reply.status(500).send({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+type AddCllctionReq=FastifyRequest<AddCollection>;
+
+const AddCollectionHandler=async(request:AddCllctionReq, reply: FastifyReply  )=>{
+
+  try{
+    const collContributors=request?.mongo.client.db(DB).collection(COLL_CONTRIBUTORS);
+    const collEvents=request?.mongo.client.db(DB).collection(COLL_EVENTS);
+
+    const {eventId, contributor, amount} = request.body;
+    const event=await collEvents.findOne<IEvent>({_id: new ObjectId(eventId)});
+  
+    if(!event){
+      return reply.status(404).send({
+        success:false,
+        message:'not a valid event.'
+      })
+    };
+    
+    const approver=event.eventManagement?.treasurer;
+
+    const timestamp=request.getCurrentTimestamp();
+    let doc={
+      eventId,
+      amount,
+      contributor,
+      approver,
+      createdAt:timestamp,
+      createdBy:request?.user.username,
+    }
+  
+    const result=await collContributors.insertOne(doc);
+    if(result.acknowledged){
+      return reply.status(200).send({
+        success:true,
+        message:'collection added successfully'
+      })
+    }
+    else{
+      return reply.status(500).send({
+        success:false,
+        message:'database error'
+      })
+    }
+  }catch(err){
+    return reply.status(500).send({
+      success:false,
+      message:'Internal server error'
+    })
+  }
+}
+export { CreateEventHandler, UpdateEventHandler, CreateExpenseHandler, UpdateExpenseHandler, GetEventHandler, AddCollectionHandler };
