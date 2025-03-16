@@ -1,56 +1,77 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { AddCollection, CreateEvent, CreateExpense, UpdateEvent, UpdateExpense } from "./event.schema";
-import { COLL_CONTRIBUTORS, COLL_EVENTS, COLL_EXPENSES, EventStatus } from "../../utils/constants";
+import {
+  AddCollection,
+  ApproveCollection,
+  CreateEvent,
+  CreateExpense,
+  UpdateEvent,
+  UpdateExpense,
+} from "./event.schema";
+import {
+  COLL_CONTRIBUTORS,
+  COLL_EVENTS,
+  COLL_EXPENSES,
+  EventStatus,
+} from "../../utils/constants";
 import { ObjectId } from "@fastify/mongodb";
 import { IEvent } from "../../models/event";
 
 type CrtEvntRequest = FastifyRequest<CreateEvent>;
 const DB = process.env.DB_NAME;
 
-const CreateEventHandler = async(request: CrtEvntRequest, reply: FastifyReply) => {
+const CreateEventHandler = async (
+  request: CrtEvntRequest,
+  reply: FastifyReply
+) => {
   try {
+    if (request.user && request.user.role !== "admin") {
+      return reply.status(401).send({
+        success: false,
+        message: "user has no access for this operation.",
+      });
+    }
+    const {
+      name,
+      description,
+      startDate,
+      endDate,
+      status,
+      eventManagement,
+      eventImages,
+    } = request.body;
+    const timestamp = request.getCurrentTimestamp();
 
-    if(request.user && request.user.role!=='admin'){
-        return reply.status(401).send({
-            success:false,
-            message:'user has no access for this operation.'
-        })
-    }
-    const {name, description, startDate, endDate, status, eventManagement, eventImages}=request.body;
-    const timestamp=request.getCurrentTimestamp();
-    
-    const eventImg=eventImages?eventImages:[]
-    
-    const doc={
-        name,
-        description,
-        startDate,
-        endDate,
-        status,
-        eventManagement,
-        eventImages:eventImg,
-        createdAt:timestamp,
-        updatedAt:timestamp,
-        createdBy:request.user.username,
-        updatedBy:request.user.username
-    }
-    const collEvents=request.mongo.client.db(DB).collection(COLL_EVENTS);
+    const eventImg = eventImages ? eventImages : [];
 
-    if(!collEvents){
-        return reply.status(500).send({
-            success:false,
-            message:'database error'
-        })
-    }
-    const result=await collEvents.insertOne(doc);
-   
-    if(result?.acknowledged){
-        return reply.send({
-            success:true,
-            message:'Event created successfully.'
-        })
-    }
+    const doc = {
+      name,
+      description,
+      startDate,
+      endDate,
+      status,
+      eventManagement,
+      eventImages: eventImg,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      createdBy: request.user.username,
+      updatedBy: request.user.username,
+    };
+    const collEvents = request.mongo.client.db(DB).collection(COLL_EVENTS);
 
+    if (!collEvents) {
+      return reply.status(500).send({
+        success: false,
+        message: "database error",
+      });
+    }
+    const result = await collEvents.insertOne(doc);
+
+    if (result?.acknowledged) {
+      return reply.send({
+        success: true,
+        message: "Event created successfully.",
+      });
+    }
   } catch (err) {
     return reply.send({
       success: false,
@@ -59,8 +80,11 @@ const CreateEventHandler = async(request: CrtEvntRequest, reply: FastifyReply) =
   }
 };
 
-type UpdtEvntRequest=FastifyRequest<UpdateEvent>
-const UpdateEventHandler = async (request: UpdtEvntRequest, reply: FastifyReply) => {
+type UpdtEvntRequest = FastifyRequest<UpdateEvent>;
+const UpdateEventHandler = async (
+  request: UpdtEvntRequest,
+  reply: FastifyReply
+) => {
   try {
     if (!request.user || request.user.role !== "admin") {
       return reply.status(401).send({
@@ -69,7 +93,16 @@ const UpdateEventHandler = async (request: UpdtEvntRequest, reply: FastifyReply)
       });
     }
 
-    const { eventId, name, status,description, startDate, endDate, eventManagement, eventImages } = request.body;
+    const {
+      eventId,
+      name,
+      status,
+      description,
+      startDate,
+      endDate,
+      eventManagement,
+      eventImages,
+    } = request.body;
 
     if (!eventId || !ObjectId.isValid(eventId)) {
       return reply.status(400).send({
@@ -79,14 +112,15 @@ const UpdateEventHandler = async (request: UpdtEvntRequest, reply: FastifyReply)
     }
 
     const timestamp = request.getCurrentTimestamp();
-    
+
     const updateFields: Partial<UpdateEvent["Body"]> = {};
     if (name !== undefined) updateFields.name = name;
     if (description !== undefined) updateFields.description = description;
     if (status !== undefined) updateFields.status = status;
     if (startDate !== undefined) updateFields.startDate = startDate;
     if (endDate !== undefined) updateFields.endDate = endDate;
-    if (eventManagement !== undefined) updateFields.eventManagement = eventManagement;
+    if (eventManagement !== undefined)
+      updateFields.eventManagement = eventManagement;
     if (eventImages !== undefined) updateFields.eventImages = eventImages;
 
     if (Object.keys(updateFields).length === 0) {
@@ -123,8 +157,7 @@ const UpdateEventHandler = async (request: UpdtEvntRequest, reply: FastifyReply)
         message: "No changes made to the event.",
       });
     }
-
-  } catch (err:any) {
+  } catch (err: any) {
     console.error("Error:", err);
     return reply.status(500).send({
       success: false,
@@ -133,76 +166,86 @@ const UpdateEventHandler = async (request: UpdtEvntRequest, reply: FastifyReply)
     });
   }
 };
-type CrtExpnsReq=FastifyRequest<CreateExpense>;
+type CrtExpnsReq = FastifyRequest<CreateExpense>;
 
-const CreateExpenseHandler=async(request: CrtExpnsReq, reply: FastifyReply)=>{
+const CreateExpenseHandler = async (
+  request: CrtExpnsReq,
+  reply: FastifyReply
+) => {
+  try {
+    const collEvents = request?.mongo.client.db(DB).collection(COLL_EVENTS);
+    const collExpenses = request?.mongo.client.db(DB).collection(COLL_EXPENSES);
 
-  try{
-    const collEvents=request?.mongo.client.db(DB).collection(COLL_EVENTS);
-    const collExpenses=request?.mongo.client.db(DB).collection(COLL_EXPENSES);
-  
-    const {eventId, name, description, amount} = request.body;
-    const event=await collEvents.findOne({_id: new ObjectId(eventId)});
-  
-    if(!event){
+    const { eventId, name, description, amount } = request.body;
+    const event = await collEvents.findOne({ _id: new ObjectId(eventId) });
+
+    if (!event) {
       return reply.status(404).send({
-        success:false,
-        message:'not a valid event.'
-      })
-    };
-    const timestamp=request.getCurrentTimestamp();
-    let doc={
+        success: false,
+        message: "not a valid event.",
+      });
+    }
+    const timestamp = request.getCurrentTimestamp();
+    let doc = {
       name,
       eventId: new ObjectId(eventId),
       amount,
-      createdAt:timestamp,
-      createdBy:request?.user.username,
-      ...(description && { description })
-    }
-  
-    const result=await collExpenses.insertOne(doc);
-    if(result.acknowledged){
+      createdAt: timestamp,
+      createdBy: request?.user.username,
+      ...(description && { description }),
+    };
+
+    const result = await collExpenses.insertOne(doc);
+    if (result.acknowledged) {
       return reply.status(200).send({
-        success:true,
-        message:'expense created successfully'
-      })
+        success: true,
+        message: "expense created successfully",
+      });
     }
-  }catch(err){
+  } catch (err) {
     return reply.status(500).send({
-      success:false,
-      message:'Internal server error'
-    })
+      success: false,
+      message: "Internal server error",
+    });
   }
-} 
+};
 
-type UpdtExpnsReq=FastifyRequest<UpdateExpense>;
+type UpdtExpnsReq = FastifyRequest<UpdateExpense>;
 
-const UpdateExpenseHandler=async(request: UpdtExpnsReq, reply: FastifyReply)=>{
+const UpdateExpenseHandler = async (
+  request: UpdtExpnsReq,
+  reply: FastifyReply
+) => {
+  try {
+    const collEvents = request?.mongo.client.db(DB).collection(COLL_EVENTS);
+    const collExpenses = request?.mongo.client.db(DB).collection(COLL_EXPENSES);
 
-  try{
-    const collEvents=request?.mongo.client.db(DB).collection(COLL_EVENTS);
-    const collExpenses=request?.mongo.client.db(DB).collection(COLL_EXPENSES);
-  
-    const {id, name, description, amount} = request.body;
-    const event=await collEvents.findOne({_id: new ObjectId(id)});
-  
-    if(!event){
+    const { id, name, description, amount } = request.body;
+    const event = await collEvents.findOne({ _id: new ObjectId(id) });
+
+    if (!event) {
       return reply.status(404).send({
-        success:false,
-        message:'not a valid record.'
-      })
-    };
-    const timestamp=request.getCurrentTimestamp();
-    let doc : Partial<UpdateExpense['Body']> & {updatedAt:number, updatedBy: string }={
-      updatedAt:timestamp,
-      updatedBy:request.user.username
+        success: false,
+        message: "not a valid record.",
+      });
+    }
+    const timestamp = request.getCurrentTimestamp();
+    let doc: Partial<UpdateExpense["Body"]> & {
+      updatedAt: number;
+      updatedBy: string;
+    } = {
+      updatedAt: timestamp,
+      updatedBy: request.user.username,
     };
 
-    if(name) doc.name=name;
-    if(description) doc.description=description;
-    if(amount) doc.amount=amount;
-    
-    const result=await collExpenses.updateOne({_id: new ObjectId(id)}, {$set: doc});
+    if (name) doc.name = name;
+    if (description) doc.description = description;
+    if (amount) doc.amount = amount;
+
+    const result = await collExpenses.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: doc }
+    );
     if (result.modifiedCount > 0) {
       return reply.send({
         success: true,
@@ -214,18 +257,21 @@ const UpdateExpenseHandler=async(request: UpdtExpnsReq, reply: FastifyReply)=>{
         message: "No changes made to the event.",
       });
     }
-  }catch(err){
+  } catch (err) {
     return reply.status(500).send({
-      success:false,
-      message:'Internal server error'
-    })
+      success: false,
+      message: "Internal server error",
+    });
   }
-} 
-const GetEventHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+};
+const GetEventHandler = async (
+  request: FastifyRequest,
+  reply: FastifyReply
+) => {
   try {
     const collEvents = request.mongo.client.db(DB).collection(COLL_EVENTS);
 
-    const status: EventStatus = "active"; 
+    const status: EventStatus = "active";
     const result = await collEvents.find({ status }).toArray();
 
     if (result.length === 0) {
@@ -240,7 +286,7 @@ const GetEventHandler = async (request: FastifyRequest, reply: FastifyReply) => 
       data: result,
     });
   } catch (err) {
-    console.error("Error fetching events:", err); 
+    console.error("Error fetching events:", err);
     return reply.status(500).send({
       success: false,
       message: "Internal server error",
@@ -248,54 +294,135 @@ const GetEventHandler = async (request: FastifyRequest, reply: FastifyReply) => 
   }
 };
 
-type AddCllctionReq=FastifyRequest<AddCollection>;
+type AddCllctionReq = FastifyRequest<AddCollection>;
 
-const AddCollectionHandler=async(request:AddCllctionReq, reply: FastifyReply  )=>{
+const AddCollectionHandler = async (
+  request: AddCllctionReq,
+  reply: FastifyReply
+) => {
+  try {
+    const collContributors = request?.mongo.client
+      .db(DB)
+      .collection(COLL_CONTRIBUTORS);
+    const collEvents = request?.mongo.client.db(DB).collection(COLL_EVENTS);
 
-  try{
-    const collContributors=request?.mongo.client.db(DB).collection(COLL_CONTRIBUTORS);
-    const collEvents=request?.mongo.client.db(DB).collection(COLL_EVENTS);
+    const { eventId, contributor, amount } = request.body;
+    const event = await collEvents.findOne<IEvent>({
+      _id: new ObjectId(eventId),
+    });
 
-    const {eventId, contributor, amount} = request.body;
-    const event=await collEvents.findOne<IEvent>({_id: new ObjectId(eventId)});
-  
-    if(!event){
+    if (!event) {
       return reply.status(404).send({
-        success:false,
-        message:'not a valid event.'
-      })
-    };
-    
-    const approver=event.eventManagement?.treasurer;
+        success: false,
+        message: "not a valid event.",
+      });
+    }
 
-    const timestamp=request.getCurrentTimestamp();
-    let doc={
+    const treasurer = event.eventManagement?.treasurer;
+
+    const timestamp = request.getCurrentTimestamp();
+    let doc = {
       eventId,
       amount,
       contributor,
-      approver,
-      createdAt:timestamp,
-      createdBy:request?.user.username,
-    }
-  
-    const result=await collContributors.insertOne(doc);
-    if(result.acknowledged){
+      treasurer,
+      approved: false,
+      createdAt: timestamp,
+      createdBy: request?.user.username,
+    };
+
+    const result = await collContributors.insertOne(doc);
+    if (result.acknowledged) {
       return reply.status(200).send({
-        success:true,
-        message:'collection added successfully'
-      })
-    }
-    else{
+        success: true,
+        message: "collection added successfully",
+      });
+    } else {
       return reply.status(500).send({
-        success:false,
-        message:'database error'
-      })
+        success: false,
+        message: "database error",
+      });
     }
-  }catch(err){
+  } catch (err) {
     return reply.status(500).send({
-      success:false,
-      message:'Internal server error'
-    })
+      success: false,
+      message: "Internal server error",
+    });
   }
-}
-export { CreateEventHandler, UpdateEventHandler, CreateExpenseHandler, UpdateExpenseHandler, GetEventHandler, AddCollectionHandler };
+};
+
+type ApprvClltionReq = FastifyRequest<ApproveCollection>;
+const ApproveCollectionHandler = async (
+  request: ApprvClltionReq,
+  reply: FastifyReply
+) => {
+  try {
+    const collContributors = request?.mongo.client
+      .db(DB)
+      .collection(COLL_CONTRIBUTORS);
+
+    const { collectionId } = request.params;
+    const contributor = await collContributors.findOne({
+      _id: new ObjectId(collectionId),
+    });
+
+    if (!contributor) {
+      return reply.status(404).send({
+        success: false,
+        message: "Collection details not found.",
+      });
+    }
+
+    const role = request.user.role;
+    const treasurerName = contributor.treasurer;
+
+    if (treasurerName !== request.user.username && role !== "admin") {
+      return reply.status(401).send({
+        success: false,
+        message: "You are not authorized to approve this.",
+      });
+    }
+
+    const approvedBy = request.user.username;
+    const timestamp = request.getCurrentTimestamp();
+
+    const updateDoc = {
+      approved: true,
+      approvedBy,
+      updatedAt: timestamp,
+      updatedBy: approvedBy,
+    };
+
+    const result = await collContributors.updateOne(
+      { _id: new ObjectId(collectionId) },
+      { $set: updateDoc }
+    );
+
+    if (result.modifiedCount > 0) {
+      return reply.status(200).send({
+        success: true,
+        message: "Approved successfully",
+      });
+    } else {
+      return reply.status(400).send({
+        success: false,
+        message: "Approval failed. No changes were made.",
+      });
+    }
+  } catch (err) {
+    return reply.status(500).send({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export {
+  CreateEventHandler,
+  UpdateEventHandler,
+  CreateExpenseHandler,
+  UpdateExpenseHandler,
+  GetEventHandler,
+  AddCollectionHandler,
+  ApproveCollectionHandler,
+};

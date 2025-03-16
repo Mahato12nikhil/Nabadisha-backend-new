@@ -22,7 +22,7 @@ export interface CreateEvent {
     eventImages?: string[];
     startDate: number;
     endDate: number;
-    status:string,
+    status: string;
     eventManagement: IEventManagement;
     createdAt: number;
     updatedAt: number;
@@ -35,12 +35,12 @@ const CreateEventReqOpts: RouteShorthandOptions = {
   schema: {
     tags: ["Events"],
     security: [{ bearerAuth: [] }],
-    headers:{
-      type:'object',
-      required:['authorization'],
-      properties:{
-        authorization: {type : "string"}
-      }
+    headers: {
+      type: "object",
+      required: ["authorization"],
+      properties: {
+        authorization: { type: "string" },
+      },
     },
     body: {
       type: "object",
@@ -52,134 +52,255 @@ const CreateEventReqOpts: RouteShorthandOptions = {
         "endDate",
         "eventManagement",
       ],
-      properties:{
+      properties: {
         name: { type: "string" },
         description: { type: "string" },
-        eventImages: { type: "array", items: { type: "string", format: "uri" } },
-        status:{type:'string', enum: ["active", "ended", "inactive"]},
+        eventImages: {
+          type: "array",
+          items: { type: "string", format: "uri" },
+        },
+        status: { type: "string", enum: ["active", "ended", "inactive"] },
         startDate: { type: "number" },
         endDate: { type: "number" },
-        eventManagement: EventManagementReqOpts ,
-      }
+        eventManagement: EventManagementReqOpts,
+      },
+    },
+    response: {
+      200: {
+        type: "object",
+        required: ["success", "message"],
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
     },
   },
 };
 
 export interface UpdateEvent {
-    Headers: {
-      authorization: string;
-    };
-    Body: {
-      eventId:string,  
-      name: string;
-      description: string;
-      status:string,
-      eventImages?: string[];
-      startDate: number;
-      endDate: number;
-      eventManagement: IEventManagement;
-      updatedAt: number;
-      updatedBy: string;
-    };
-  }
-
-  const UpdateEventReqOpts: RouteShorthandOptions = {
-    schema: {
-      tags: ["Events"],
-      security: [{ bearerAuth: [] }],
-      headers:{
-        type:'object',
-        required:['authorization'],
-        properties:{
-          authorization: {type : "string"}
-        }
-      },
-      body: {
-        type: "object",
-        required: [
-          "eventId",
-        ],
-        properties:{
-            eventId:{type:'string' , pattern: "^[a-fA-F0-9]{24}$"},
-            name: { type: "string" },
-            description: { type: "string" },
-            status:{type:'string', enum: ["active", "ended", "inactive"]},
-            eventImages: { type: "array", items: { type: "string", format: "uri" } },
-            startDate: { type: "number" },
-            endDate: { type: "number" },
-            eventManagement: EventManagementReqOpts ,
-        }
-      },
-    },
+  Headers: {
+    authorization: string;
   };
-  interface CreateExpense {
-    Headers: {
-      authorization: string;
-    },
-    Body:{
-      eventId:string,
-      name: string,
-      description?:string,
-      amount:number
-    }
-  }
-  interface UpdateExpense{
-    Headers: {
-      authorization: string;
-    };
-    Body:{
-      id:string,
-      name?:string,
-      description?:string,
-      amount?:number
-    }
-  }
-  const CreateExpenseReqOpts: RouteShorthandOptions={
-    schema:{
-      security:[{bearerAuth:[]}],
-      tags:['Events'],
-      headers:{
-        type:'object',
-        required:['authorization'],
-        properties:{
-          authorization: {type : "string"}
-        }
-      },
-      body:{
-        type:'object',
-        required:['name', 'amount'],
-        properties:{
-          eventId:{type:'string', pattern: "^[a-fA-F0-9]{24}$"},
-          name:{type:'string'},
-          description:{type:'string'},
-          amount:{type:'number'}
-        }
-      }
-    }
-  }
-  const UpdateExpenseReqOpts: RouteShorthandOptions={
-    schema:{
-      security:[{bearerAuth:[]}],
-      tags:['Events'],
-      headers:{
-        type:'object',
-        required:['authorization'],
-        properties:{
-          authorization: {type : "string"}
-        }
-      },
-      body:{
-        type:'object',
-        required:['id'],
-        properties:{
-          id:{type:'string', pattern: "^[a-fA-F0-9]{24}$"},
-          name:{type:'string'},
-          description:{type:'string'},
-          amount:{type:'number'}
-        }
-      }
-    }
-  }
+  Body: {
+    eventId: string;
+    name: string;
+    description: string;
+    status: string;
+    eventImages?: string[];
+    startDate: number;
+    endDate: number;
+    eventManagement: IEventManagement;
+    updatedAt: number;
+    updatedBy: string;
+  };
+}
 
-export { CreateEventReqOpts, UpdateEventReqOpts, CreateExpenseReqOpts, UpdateExpenseReqOpts };
-export type {CreateExpense, UpdateExpense}
+const UpdateEventReqOpts: RouteShorthandOptions = {
+  schema: {
+    tags: ["Events"],
+    security: [{ bearerAuth: [] }],
+    headers: {
+      type: "object",
+      required: ["authorization"],
+      properties: {
+        authorization: { type: "string" },
+      },
+    },
+    body: {
+      type: "object",
+      required: ["eventId"],
+      properties: {
+        eventId: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
+        name: { type: "string" },
+        description: { type: "string" },
+        status: { type: "string", enum: ["active", "ended", "inactive"] },
+        eventImages: {
+          type: "array",
+          items: { type: "string", format: "uri" },
+        },
+        startDate: { type: "number" },
+        endDate: { type: "number" },
+        eventManagement: EventManagementReqOpts,
+      },
+    },
+    response: {
+      200: {
+        type: "object",
+        required: ["success", "message"],
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+    },
+  },
+};
+interface CreateExpense {
+  Headers: {
+    authorization: string;
+  };
+  Body: {
+    eventId: string;
+    name: string;
+    description?: string;
+    amount: number;
+  };
+}
+interface UpdateExpense {
+  Headers: {
+    authorization: string;
+  };
+  Body: {
+    id: string;
+    name?: string;
+    description?: string;
+    amount?: number;
+  };
+}
+const CreateExpenseReqOpts: RouteShorthandOptions = {
+  schema: {
+    security: [{ bearerAuth: [] }],
+    tags: ["Events"],
+    headers: {
+      type: "object",
+      required: ["authorization"],
+      properties: {
+        authorization: { type: "string" },
+      },
+    },
+    body: {
+      type: "object",
+      required: ["name", "amount"],
+      properties: {
+        eventId: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
+        name: { type: "string" },
+        description: { type: "string" },
+        amount: { type: "number" },
+      },
+    },
+    response: {
+      200: {
+        type: "object",
+        required: ["success", "message"],
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+    },
+  },
+};
+const UpdateExpenseReqOpts: RouteShorthandOptions = {
+  schema: {
+    security: [{ bearerAuth: [] }],
+    tags: ["Events"],
+    headers: {
+      type: "object",
+      required: ["authorization"],
+      properties: {
+        authorization: { type: "string" },
+      },
+    },
+    body: {
+      type: "object",
+      required: ["id"],
+      properties: {
+        id: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
+        name: { type: "string" },
+        description: { type: "string" },
+        amount: { type: "number" },
+      },
+    },
+    response: {
+      200: {
+        type: "object",
+        required: ["success", "message"],
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+    },
+  },
+};
+
+interface AddCollection {
+  Body: {
+    eventId: string;
+    amount: number;
+    contributor: string;
+  };
+}
+const AddCollectionReqOpts: RouteShorthandOptions = {
+  schema: {
+    security: [{ bearerAuth: [] }],
+    tags: ["Events"],
+    body: {
+      type: "object",
+      required: ["eventId", "amount", "contributor"],
+      properties: {
+        eventId: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
+        amount: { type: "number" },
+        contributor: { type: "string" },
+      },
+    },
+    response: {
+      200: {
+        type: "object",
+        required: ["success", "message"],
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+    },
+  },
+};
+interface ApproveCollection {
+  Headers: {
+    authorization: string;
+  };
+  Params: {
+    collectionId: string;
+  };
+}
+const ApproveCollectionReqOpts: RouteShorthandOptions = {
+  schema: {
+    tags: ["Events"],
+    security: [{ bearerAuth: [] }],
+    headers: {
+      type: "object",
+      required: ["authorization"],
+      properties: {
+        authorization: { type: "string" },
+      },
+    },
+    body: {
+      type: "object",
+      required: ["collectionId"],
+      properties: {
+        collectionId: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
+      },
+    },
+    response: {
+      200: {
+        type: "object",
+        required: ["success", "message"],
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+      },
+    },
+  },
+};
+export {
+  CreateEventReqOpts,
+  UpdateEventReqOpts,
+  CreateExpenseReqOpts,
+  UpdateExpenseReqOpts,
+  AddCollectionReqOpts,
+  ApproveCollectionReqOpts,
+};
+export type { CreateExpense, UpdateExpense, AddCollection, ApproveCollection };
