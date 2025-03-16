@@ -9,7 +9,7 @@ const eventRoute: FastifyPluginAsync=async(fastify, opts)=>{
     fastify.post<CreateExpense>('/create-expense',CreateExpenseReqOpts, CreateExpenseHandler);
     fastify.put<UpdateExpense>('/update-expense',UpdateExpenseReqOpts, UpdateExpenseHandler);
     fastify.post<AddCollection>('/add-collection',AddCollectionReqOpts, AddCollectionHandler);
-    fastify.post<ApproveCollection>('/approve-collection',ApproveCollectionReqOpts,ApproveCollectionHandler);
+    fastify.post<ApproveCollection>('/approve-collection/:collectionId',ApproveCollectionReqOpts,ApproveCollectionHandler);
     
 }
 export default eventRoute;
