@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { CreateEvent, CreateExpense, UpdateEvent } from "./event.schema";
+import { CreateEvent, CreateExpense, UpdateEvent, UpdateExpense } from "./event.schema";
 import { COLL_EVENTS, COLL_EXPENSES } from "../../utils/constants";
 import { ObjectId } from "@fastify/mongodb";
 
@@ -172,7 +172,52 @@ const CreateExpenseHandler=async(request: CrtExpnsReq, reply: FastifyReply)=>{
       message:'Internal server error'
     })
   }
-  
-
 } 
-export { CreateEventHandler, UpdateEventHandler, CreateExpenseHandler };
+
+type UpdtExpnsReq=FastifyRequest<UpdateExpense>;
+
+const UpdateExpenseHandler=async(request: UpdtExpnsReq, reply: FastifyReply)=>{
+
+  try{
+    const collEvents=request?.mongo.client.db(DB).collection(COLL_EVENTS);
+    const collExpenses=request?.mongo.client.db(DB).collection(COLL_EXPENSES);
+  
+    const {id, name, description, amount} = request.body;
+    const event=await collEvents.findOne({_id: new ObjectId(id)});
+  
+    if(!event){
+      return reply.status(404).send({
+        success:false,
+        message:'not a valid record.'
+      })
+    };
+    const timestamp=request.getCurrentTimestamp();
+    let doc : Partial<UpdateExpense['Body']> & {updatedAt:number, updatedBy: string }={
+      updatedAt:timestamp,
+      updatedBy:request.user.username
+    };
+
+    if(name) doc.name=name;
+    if(description) doc.description=description;
+    if(amount) doc.amount=amount;
+    
+    const result=await collExpenses.updateOne({_id: new ObjectId(id)}, {$set: doc});
+    if (result.modifiedCount > 0) {
+      return reply.send({
+        success: true,
+        message: "Event updated successfully.",
+      });
+    } else {
+      return reply.send({
+        success: true,
+        message: "No changes made to the event.",
+      });
+    }
+  }catch(err){
+    return reply.status(500).send({
+      success:false,
+      message:'Internal server error'
+    })
+  }
+} 
+export { CreateEventHandler, UpdateEventHandler, CreateExpenseHandler, UpdateExpenseHandler };

@@ -35,6 +35,13 @@ const CreateEventReqOpts: RouteShorthandOptions = {
   schema: {
     tags: ["Events"],
     security: [{ bearerAuth: [] }],
+    headers:{
+      type:'object',
+      required:['authorization'],
+      properties:{
+        authorization: {type : "string"}
+      }
+    },
     body: {
       type: "object",
       required: [
@@ -80,6 +87,13 @@ export interface UpdateEvent {
     schema: {
       tags: ["Events"],
       security: [{ bearerAuth: [] }],
+      headers:{
+        type:'object',
+        required:['authorization'],
+        properties:{
+          authorization: {type : "string"}
+        }
+      },
       body: {
         type: "object",
         required: [
@@ -99,11 +113,25 @@ export interface UpdateEvent {
     },
   };
   interface CreateExpense {
+    Headers: {
+      authorization: string;
+    },
     Body:{
       eventId:string,
       name: string,
       description?:string,
       amount:number
+    }
+  }
+  interface UpdateExpense{
+    Headers: {
+      authorization: string;
+    };
+    Body:{
+      id:string,
+      name?:string,
+      description?:string,
+      amount?:number
     }
   }
   const CreateExpenseReqOpts: RouteShorthandOptions={
@@ -114,7 +142,7 @@ export interface UpdateEvent {
         type:'object',
         required:['authorization'],
         properties:{
-          authorization: {type : "boolean"}
+          authorization: {type : "string"}
         }
       },
       body:{
@@ -129,6 +157,29 @@ export interface UpdateEvent {
       }
     }
   }
+  const UpdateExpenseReqOpts: RouteShorthandOptions={
+    schema:{
+      security:[{bearerAuth:[]}],
+      tags:['Events'],
+      headers:{
+        type:'object',
+        required:['authorization'],
+        properties:{
+          authorization: {type : "string"}
+        }
+      },
+      body:{
+        type:'object',
+        required:['id'],
+        properties:{
+          id:{type:'string', pattern: "^[a-fA-F0-9]{24}$"},
+          name:{type:'string'},
+          description:{type:'string'},
+          amount:{type:'number'}
+        }
+      }
+    }
+  }
   
-export { CreateEventReqOpts, UpdateEventReqOpts, CreateExpenseReqOpts };
-export type {CreateExpense}
+export { CreateEventReqOpts, UpdateEventReqOpts, CreateExpenseReqOpts, UpdateExpenseReqOpts };
+export type {CreateExpense, UpdateExpense}
