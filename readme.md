@@ -1,7 +1,7 @@
 # Nabadisha Backend APIs
 
 ## Overview
-This is the backend service for Nabadisha, developed using **Fastify**. It provides APIs for user authentication, role-based access control, and dashboard management.
+This is the backend service for Nabadisha, developed using **Fastify**. It provides APIs for user authentication, role-based access control, contents, events, and dashboard management.
 
 ## Tech Stack
 - **Fastify** (Node.js framework)
