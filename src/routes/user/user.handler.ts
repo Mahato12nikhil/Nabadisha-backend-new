@@ -1,6 +1,12 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { COLL_USERS } from "../../utils/constants";
-import { CreateUser, Login, UpdateUser, UpdateUserRole } from "./user.schema";
+import {
+  CreateUser,
+  Login,
+  ResetPassword,
+  UpdateUser,
+  UpdateUserRole,
+} from "./user.schema";
 import { UserSchema } from "../../models/user";
 import bcrypt from "bcryptjs";
 
@@ -67,12 +73,10 @@ const CreateUserHandler = async (req: CrtUsrRqst, res: FastifyReply) => {
     } = req.body;
 
     if (!req.user?.role) {
-      return res
-        .status(401)
-        .send({
-          success: false,
-          message: "You are not authorised to create user.",
-        });
+      return res.status(401).send({
+        success: false,
+        message: "You are not authorised to create user.",
+      });
     }
 
     const existingUser = await collUser.findOne({ username });
@@ -339,17 +343,10 @@ const LoginHandler = async (req: LoginReq, res: FastifyReply) => {
       "User logged in successfully",
       JSON.stringify({ username })
     );
-
     return res.status(200).send({
       success: true,
       message: "Login successful.",
-      token,
-      refreshToken,
-      user: {
-        id: user._id,
-        username: user.username,
-        role: user.role,
-      },
+      data:{token, refreshToken, user}
     });
   } catch (err) {
     req.logToDb(
@@ -363,9 +360,59 @@ const LoginHandler = async (req: LoginReq, res: FastifyReply) => {
     });
   }
 };
+
+type RstPssRequest = FastifyRequest<ResetPassword>;
+
+const ResetPasswordHandler = async (
+  request: RstPssRequest,
+  reply: FastifyReply
+) => {
+  try {
+    if(request.user?.role!=='admin'){
+      return reply.status(401).send({
+        success:false,
+        message:'you are not authorized.'
+      })
+    }
+
+    const collUser = request.mongo.client.db(DB).collection(COLL_USERS);
+    const { username, password } = request.body;
+
+    const user = await collUser.findOne({ username });
+
+    if (!user) {
+      return reply.status(404).send({
+        success: false,
+        message: "user not found",
+      });
+    }
+    const newPassword = request.encryptPassword(password);
+
+    const result = await collUser.updateOne(
+      { username },
+      { $set: { password: newPassword } }
+    );
+
+    if (result.modifiedCount > 0)
+      return reply.status(200).send({
+        success: true,
+        message: "password updated successfully.",
+      });
+    return reply.status(400).send({
+      success: false,
+      message: "Password update failed.",
+    });
+  } catch (err) {
+    return reply.status(500).send({
+      success: false,
+      message: "password update failed.",
+    });
+  }
+};
 export {
   GetAllUsershandler,
   CreateUserHandler,
   UpdateUserHandler,
   LoginHandler,
+  ResetPasswordHandler,
 };

@@ -2,22 +2,13 @@ import { RouteShorthandOptions } from "fastify";
 
 const UserOpts = {
   type: "object",
-  required: [
-    "_id",
-    "name",
-    "username",
-    "phone",
-    "isActive",
-    "createdAt",
-    "updatedAt",
-  ],
+  required: ["name", "username", "phone", "isActive", "createdAt", "updatedAt"],
   properties: {
-    _id: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
     name: { type: "string" },
     username: { type: "string" },
     phone: { type: "string" },
     isActive: { type: "boolean" },
-    userPic: { type: "string", format:'uri' },
+    userPic: { type: "string", format: "uri" },
     role: { type: "string" },
     socials: {
       type: "object",
@@ -28,14 +19,15 @@ const UserOpts = {
       },
     },
     createdAt: { type: "integer" },
+    createdBy: { type: "string" },
     updatedAt: { type: "integer" },
-    updatedBy: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
+    updatedBy: { type: "string" },
   },
 };
 
 const GetAllUsersOpts: RouteShorthandOptions = {
   schema: {
-    tags:['User'],
+    tags: ["User"],
     response: {
       200: {
         type: "object",
@@ -64,7 +56,7 @@ interface CreateUser {
   Body: {
     name: string;
     username: string;
-    password:string,
+    password: string;
     phone: string;
     isActive: boolean;
     userPic: string;
@@ -74,73 +66,77 @@ interface CreateUser {
       instagram?: string;
       linkedin?: string;
     };
-    createdAt: number;
-    updatedAt: number;
-    updatedBy: string;
   };
 }
 
 const CreateUserOpts: RouteShorthandOptions = {
   schema: {
-    tags:['User'],
+    tags: ["User"],
     security: [{ bearerAuth: [] }],
-    headers:{
-      type:'object',
-      required:['authorization'],
-      properties:{
-        authorization:{type:'string'}
-      }
+    headers: {
+      type: "object",
+      required: ["authorization"],
+      properties: {
+        authorization: { type: "string" },
+      },
     },
     body: {
-      type: 'object',
-      required: ['name', 'username', 'phone', 'isActive', 'role', 'password', 'createdAt', 'updatedAt', 'updatedBy'],
+      type: "object",
+      required: [
+        "name",
+        "username",
+        "phone",
+        "isActive",
+        "role",
+        "password",
+        "createdAt",
+        "updatedAt",
+        "updatedBy",
+      ],
       properties: {
-        name: { type: 'string' },
-        username: { type: 'string', minLength: 7 },
-        password:{type:'string'},
-        phone: { type: 'string' },
-        isActive: { type: 'boolean' },
-        userPic:{ type: 'string', format: 'uri' },
-        role: { type: 'string' },
+        name: { type: "string" },
+        username: { type: "string", minLength: 7 },
+        password: { type: "string" },
+        phone: { type: "string" },
+        isActive: { type: "boolean" },
+        userPic: { type: "string", format: "uri" },
+        role: { type: "string" },
         socials: {
-          type: 'object',
+          type: "object",
           properties: {
-            facebook: { type: 'string' },
-            instagram: { type: 'string' },
-            linkedin: { type: 'string' },
+            facebook: { type: "string" },
+            instagram: { type: "string" },
+            linkedin: { type: "string" },
           },
           additionalProperties: false,
         },
-        createdAt: { type: 'integer' },
-        updatedAt: { type: 'integer' },
-        updatedBy: { type: 'string', pattern: '^[a-fA-F0-9]{24}$' },
       },
     },
     response: {
       200: {
-        type: 'object',
+        type: "object",
         properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' },
-          userId: { type: 'string' },
+          success: { type: "boolean" },
+          message: { type: "string" },
+          userId: { type: "string" },
         },
-        required: ['success', 'message', 'userId'],
+        required: ["success", "message", "userId"],
       },
       500: {
-        type: 'object',
+        type: "object",
         properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' },
+          success: { type: "boolean" },
+          message: { type: "string" },
         },
-        required: ['success', 'message'],
+        required: ["success", "message"],
       },
       409: {
-        type: 'object',
+        type: "object",
         properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' },
+          success: { type: "boolean" },
+          message: { type: "string" },
         },
-        required: ['success', 'message'],
+        required: ["success", "message"],
       },
     },
   },
@@ -165,20 +161,20 @@ interface UpdateUser {
 
 const UpdateUserOpts: RouteShorthandOptions = {
   schema: {
-    tags:['User'],
+    tags: ["User"],
     body: {
       type: "object",
       required: ["name", "username", "updatedAt", "updatedBy"],
       properties: {
         name: { type: "string" },
-        userPic: { type: "string", format:'uri' },
+        userPic: { type: "string", format: "uri" },
         username: { type: "string", minLength: 7 },
         socials: {
           type: "object",
           properties: {
             facebook: { type: "string" },
             instagram: { type: "string" },
-            linkedin: { type: "string"},
+            linkedin: { type: "string" },
           },
           additionalProperties: false,
         },
@@ -216,56 +212,27 @@ const UpdateUserOpts: RouteShorthandOptions = {
   },
 };
 
-interface UpdateUserRole{Body:{username:string,role:string}}
-const UpdateUserRoleReqOpt: RouteShorthandOptions={
-  schema:{
-    tags:['User'],
-    description: 'API to update user Role',
+interface UpdateUserRole {
+  Body: { username: string; role: string };
+}
+const UpdateUserRoleReqOpt: RouteShorthandOptions = {
+  schema: {
+    tags: ["User"],
+    description: "API to update user Role",
     headers: {
-      type: 'object',
-      required: ['authorization'],
+      type: "object",
+      required: ["authorization"],
       properties: {
-        authorization: {type: 'string', minLength: 1},
+        authorization: { type: "string", minLength: 1 },
       },
     },
     security: [{ bearerAuth: [] }],
-    body:{
-      type: 'object',
-      required:['role'],
-      properties:{
-        role:{type:'string'},
-        username:{type:'string'}
-      }
-    },
-    response:{
-      200:{
-        type: "object",
-        properties: {
-          success: { type: "boolean" },
-          message: { type: "string" },
-        },
-        required: ["success", "message"],
-      }
-    }
-  }
-}
-
-interface Login{
-  Body:{
-    username:string,
-    password:string
-  }
-}
-const LoginReqOpts: RouteShorthandOptions = {
-  schema: {
-    tags:['User'],
-    description: "API to authenticate user and return JWT token",
     body: {
       type: "object",
-      required: ["username", "password"],
+      required: ["role"],
       properties: {
-        username: { type: "string", minLength: 5 },
-        password: { type: "string", minLength: 8 }, 
+        role: { type: "string" },
+        username: { type: "string" },
       },
     },
     response: {
@@ -273,11 +240,47 @@ const LoginReqOpts: RouteShorthandOptions = {
         type: "object",
         properties: {
           success: { type: "boolean" },
-          token: { type: "string" },
-          refreshToken: { type: "string" },
           message: { type: "string" },
         },
-        required: ["success", "token", "refreshToken", "message"],
+        required: ["success", "message"],
+      },
+    },
+  },
+};
+
+interface Login {
+  Body: {
+    username: string;
+    password: string;
+  };
+}
+const LoginReqOpts: RouteShorthandOptions = {
+  schema: {
+    tags: ["User"],
+    description: "API to authenticate user and return JWT token",
+    body: {
+      type: "object",
+      required: ["username", "password"],
+      properties: {
+        username: { type: "string", minLength: 5 },
+        password: { type: "string", minLength: 8 },
+      },
+    },
+    response: {
+      200: {
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+          data: {
+            type: "object",
+            properties: {
+              token: { type: "string" },
+              refreshToken: { type: "string" },
+              user: UserOpts,
+            },
+          },
+        },
       },
       401: {
         type: "object",
@@ -287,17 +290,53 @@ const LoginReqOpts: RouteShorthandOptions = {
         },
         required: ["success", "message"],
       },
-      500:{
+      500: {
         type: "object",
         properties: {
           success: { type: "boolean" },
           message: { type: "string" },
         },
-        required:['message', 'success']
-      }
+        required: ["message", "success"],
+      },
     },
   },
 };
-
-export { GetAllUsersOpts, CreateUserOpts, UpdateUserOpts, UpdateUserRoleReqOpt, LoginReqOpts };
-export type { CreateUser, UpdateUser, UpdateUserRole, Login };
+interface ResetPassword {
+  Body: {
+    username: string;
+    password: string;
+  };
+}
+const ResetPasswordReqOpts: RouteShorthandOptions = {
+  schema: {
+    tags: ["User"],
+    description: "API to Reset password",
+    body: {
+      type: "object",
+      required: ["username", "password"],
+      properties: {
+        username: { type: "string", minLength: 5 },
+        password: { type: "string" },
+      },
+    },
+    response: {
+      200: {
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+        required: ["success", "message"],
+      },
+    },
+  },
+};
+export {
+  GetAllUsersOpts,
+  CreateUserOpts,
+  UpdateUserOpts,
+  UpdateUserRoleReqOpt,
+  LoginReqOpts,
+  ResetPasswordReqOpts,
+};
+export type { CreateUser, UpdateUser, UpdateUserRole, Login, ResetPassword };
