@@ -30,8 +30,8 @@ export default fp(async(fastify, opts)=>{
           }
         }
     })
-    fastify.decorate('generateToken',(username, role)=>{
-      try{const token=fastify.jwt.sign({username,role}, {expiresIn: TOKEN_EXPIRY});
+    fastify.decorate('generateToken',(username, roles)=>{
+      try{const token=fastify.jwt.sign({username,roles}, {expiresIn: TOKEN_EXPIRY});
         return token;
       }
       catch(err){
@@ -50,10 +50,25 @@ export default fp(async(fastify, opts)=>{
       }
     });
 
+    fastify.decorate('validateRefreshToken', (refreshToken: string): string => {
+      try {
+        const payload = fastify.jwt.verify<{username: string}>(refreshToken);
+        if (!payload || !payload.username) {
+          console.log("username: "+payload.username)
+          throw new Error('not valid refresh token');
+        }
+        return payload.username;
+      } catch (err) {
+        fastify.log.error(err);
+        return "";
+      }
+    });
+
     fastify.addHook('preHandler', (request, reply, done) => {
       request.generateToken = fastify.generateToken;
       request.generateRefreshToken = fastify.generateRefreshToken;
       request.getUserNameFromToken = fastify.getUserNameFromToken;
+      request.validateRefreshToken=fastify.validateRefreshToken;
       done();
     });
 });
@@ -61,7 +76,7 @@ export default fp(async(fastify, opts)=>{
 
 export interface JWTPayload{
     username:string,
-    role?:string
+    roles?:string[]
 }
 declare module '@fastify/jwt' {
     interface FastifyJWT {
@@ -71,15 +86,16 @@ declare module '@fastify/jwt' {
 }
 declare module 'fastify'{
     export interface FastifyRequest{
-      generateToken(username: string, role:string): string;
+      generateToken(username: string, roles:string[]): string;
       generateRefreshToken(username: string): string;
       getUserNameFromToken(token: string): string;
-
+      validateRefreshToken(refreshToken:string):string
     }
     export interface FastifyInstance {
       authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
-      generateToken(username: string, role:string): string ;
+      generateToken(username: string, roles:string[]): string ;
       generateRefreshToken(username: string): string;
       getUserNameFromToken(token: string): string;
+      validateRefreshToken(refreshToken:string):string
     }
   }

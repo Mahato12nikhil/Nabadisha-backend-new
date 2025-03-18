@@ -11,7 +11,7 @@ const CreateRoleHandler = async (
   reply: FastifyReply
 ) => {
   try {
-    if (!request.user || request.user.role !== "admin") {
+    if (!request.user || request.user.roles?.indexOf("admin") === -1) {
       return reply.status(401).send({
         success: false,
         message: "You are not authorized to access!",
@@ -50,10 +50,10 @@ const CreatePermissionHandler = async (
   reply: FastifyReply
 ) => {
   try {
-    if (!req.user || req.user.role !== "admin") {
+    if (!req.user || req.user.roles?.indexOf("admin") === -1) {
       return reply.status(401).send({
         success: false,
-        message: `You are not authorized to create permissions, your current role is ${req.user?.role}.`,
+        message: `You are not authorized to create permissions, your current roles are ${req.user?.roles}.`,
       });
     }
 

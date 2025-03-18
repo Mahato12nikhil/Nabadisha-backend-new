@@ -3,6 +3,7 @@ import { COLL_USERS } from "../../utils/constants";
 import {
   CreateUser,
   Login,
+  RenewLogin,
   ResetPassword,
   UpdateUser,
   UpdateUserRole,
@@ -67,12 +68,12 @@ const CreateUserHandler = async (req: CrtUsrRqst, res: FastifyReply) => {
       password,
       phone,
       isActive,
-      role,
+      roles,
       socials,
       userPic,
     } = req.body;
 
-    if (!req.user?.role) {
+    if (!req.user?.roles) {
       return res.status(401).send({
         success: false,
         message: "You are not authorised to create user.",
@@ -128,7 +129,7 @@ const CreateUserHandler = async (req: CrtUsrRqst, res: FastifyReply) => {
       phone,
       isActive,
       userPic: userPic,
-      role,
+      roles,
       socials: sanitizedSocials,
       createdAt,
       updatedAt,
@@ -242,14 +243,14 @@ export const UpdateUserRoleHandler = async (
   reply: FastifyReply
 ) => {
   try {
-    if (!request.user?.role) {
+    if (!request.user?.roles) {
       return reply
         .status(401)
         .send({ success: false, message: "You are not authorised to update." });
     }
 
     // Extract role from request body
-    const { role, username } = request.body;
+    const { roles, username } = request.body;
 
     // Access MongoDB Collection
     const collUser = request.mongo.client
@@ -264,7 +265,7 @@ export const UpdateUserRoleHandler = async (
 
     const user = await collUser.findOne({ username });
 
-    if (user?.role !== "admin") {
+    if (user?.roles.indexOf("admin")!== -1) {
       return reply
         .status(401)
         .send({ success: false, message: "User not authorised to update." });
@@ -272,7 +273,7 @@ export const UpdateUserRoleHandler = async (
     // Update user role
     const updateResult = await collUser.updateOne(
       { username },
-      { $set: { role } }
+      { $set: { roles } }
     );
 
     if (updateResult.modifiedCount === 0) {
@@ -336,7 +337,7 @@ const LoginHandler = async (req: LoginReq, res: FastifyReply) => {
       });
     }
 
-    const token = req.generateToken(username, user.role);
+    const token = req.generateToken(username, user.roles);
     const refreshToken = req.generateRefreshToken(username);
     req.logToDb(
       "LoginHandler",
@@ -368,7 +369,7 @@ const ResetPasswordHandler = async (
   reply: FastifyReply
 ) => {
   try {
-    if(request.user?.role!=='admin'){
+    if(request.user?.roles?.indexOf('admin')===-1){
       return reply.status(401).send({
         success:false,
         message:'you are not authorized.'
@@ -409,10 +410,45 @@ const ResetPasswordHandler = async (
     });
   }
 };
+
+type RenewReq=FastifyRequest<RenewLogin>;
+
+const RenewLoginHandler=async(request: RenewReq, reply: FastifyReply)=>{
+  const collUser = request.mongo.client.db(DB)?.collection<UserSchema>(COLL_USERS);
+  if (!request.body.refreshToken) {
+    return reply.status(400).send({
+      success:false,
+      message:"refreshToken is required"
+    });
+  }
+  console.log("++++++++RefreshToken: "+request.body.refreshToken)
+  // validate the token and get user id from the payload
+  const username = request.validateRefreshToken(request.body.refreshToken);
+
+  // get user data
+  const user = await collUser?.findOne({username, isActive: true});
+
+  console.log("++++++++user+++++++++++++ "+user?.name)
+
+  // if user not found then throw error
+  if (!user || !user.username) {
+    return reply.status(404).send({
+      success:false,
+      message:"User not found"
+    });
+  }
+  // generate token
+  const token = request.generateToken(user.username, user.roles);
+  // generate refreshToken
+  const refreshToken = request.generateRefreshToken(user.username);
+  // return successful response
+  return reply.status(200).send({success: true, data: {user, token, refreshToken}});
+}
 export {
   GetAllUsershandler,
   CreateUserHandler,
   UpdateUserHandler,
   LoginHandler,
   ResetPasswordHandler,
+  RenewLoginHandler
 };

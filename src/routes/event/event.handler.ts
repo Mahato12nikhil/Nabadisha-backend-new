@@ -24,7 +24,7 @@ const CreateEventHandler = async (
   reply: FastifyReply
 ) => {
   try {
-    if (request.user && request.user.role !== "admin") {
+    if (request.user && request.user.roles?.indexOf("admin") !== -1) {
       return reply.status(401).send({
         success: false,
         message: "user has no access for this operation.",
@@ -86,7 +86,7 @@ const UpdateEventHandler = async (
   reply: FastifyReply
 ) => {
   try {
-    if (!request.user || request.user.role !== "admin") {
+    if (!request.user || request.user.roles?.indexOf("admin") !== -1) {
       return reply.status(401).send({
         success: false,
         message: "User has no access for this operation.",
@@ -373,10 +373,10 @@ const ApproveCollectionHandler = async (
       });
     }
 
-    const role = request.user.role;
+    const roles = request.user.roles || [];
     const treasurerName = contributor.treasurer;
 
-    if (treasurerName !== request.user.username && role !== "admin") {
+    if (treasurerName !== request.user.username && roles.indexOf("admin") !== -1) {
       return reply.status(401).send({
         success: false,
         message: "You are not authorized to approve this.",

@@ -6,7 +6,7 @@ export interface UserSchema{
     phone: string,
     isActive:boolean,
     userPic:string,
-    role: string, 
+    roles: string[], 
     socials: {
         facebook: string,
         instagram: string,

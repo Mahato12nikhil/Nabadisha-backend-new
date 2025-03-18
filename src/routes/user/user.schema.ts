@@ -9,7 +9,7 @@ const UserOpts = {
     phone: { type: "string" },
     isActive: { type: "boolean" },
     userPic: { type: "string", format: "uri" },
-    role: { type: "string" },
+    roles: { type: "array", items: { type: "string" } },
     socials: {
       type: "object",
       properties: {
@@ -24,7 +24,11 @@ const UserOpts = {
     updatedBy: { type: "string" },
   },
 };
-
+interface RenewLogin{
+  Body:{
+    refreshToken:string
+  }
+}
 const GetAllUsersOpts: RouteShorthandOptions = {
   schema: {
     tags: ["User"],
@@ -60,7 +64,7 @@ interface CreateUser {
     phone: string;
     isActive: boolean;
     userPic: string;
-    role: string;
+    roles: string[],
     socials?: {
       facebook?: string;
       instagram?: string;
@@ -87,11 +91,8 @@ const CreateUserOpts: RouteShorthandOptions = {
         "username",
         "phone",
         "isActive",
-        "role",
+        "roles",
         "password",
-        "createdAt",
-        "updatedAt",
-        "updatedBy",
       ],
       properties: {
         name: { type: "string" },
@@ -100,7 +101,7 @@ const CreateUserOpts: RouteShorthandOptions = {
         phone: { type: "string" },
         isActive: { type: "boolean" },
         userPic: { type: "string", format: "uri" },
-        role: { type: "string" },
+        roles: { type: "array", items: { type: "string" } },
         socials: {
           type: "object",
           properties: {
@@ -213,7 +214,7 @@ const UpdateUserOpts: RouteShorthandOptions = {
 };
 
 interface UpdateUserRole {
-  Body: { username: string; role: string };
+  Body: { username: string; roles: string[] };
 }
 const UpdateUserRoleReqOpt: RouteShorthandOptions = {
   schema: {
@@ -231,7 +232,7 @@ const UpdateUserRoleReqOpt: RouteShorthandOptions = {
       type: "object",
       required: ["role"],
       properties: {
-        role: { type: "string" },
+        roles: { type: "array", items: { type: "string" } },
         username: { type: "string" },
       },
     },
@@ -331,6 +332,53 @@ const ResetPasswordReqOpts: RouteShorthandOptions = {
     },
   },
 };
+const RenewLoginReqOpts: RouteShorthandOptions = {
+  schema: {
+    tags: ["User"],
+    description: "API to Renew Token",
+    body: {
+      type: "object",
+      required: ["refreshToken"],
+      properties: {
+        refreshToken: { type: "string" },
+      },
+    },
+    response: {
+      200: {
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+          data: {
+            type: "object",
+            properties: {
+              token: { type: "string" },
+              refreshToken: { type: "string" },
+              user: UserOpts,
+            },
+          },
+        },
+      },
+      401: {
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+        required: ["success", "message"],
+      },
+      500: {
+        type: "object",
+        properties: {
+          success: { type: "boolean" },
+          message: { type: "string" },
+        },
+        required: ["message", "success"],
+      },
+    },
+  },
+};
+
 export {
   GetAllUsersOpts,
   CreateUserOpts,
@@ -338,5 +386,6 @@ export {
   UpdateUserRoleReqOpt,
   LoginReqOpts,
   ResetPasswordReqOpts,
+  RenewLoginReqOpts
 };
-export type { CreateUser, UpdateUser, UpdateUserRole, Login, ResetPassword };
+export type { CreateUser, UpdateUser, UpdateUserRole, Login, ResetPassword, RenewLogin };
