@@ -4,6 +4,7 @@ import {
   ApproveCollection,
   CreateEvent,
   CreateExpense,
+  GetCollectionQuery,
   UpdateEvent,
   UpdateExpense,
 } from "./event.schema";
@@ -24,7 +25,7 @@ const CreateEventHandler = async (
   reply: FastifyReply
 ) => {
   try {
-    if (request.user && request.user.roles?.indexOf("admin") !== -1) {
+    if (request.user && request.user.roles?.indexOf("admin") === -1) {
       return reply.status(401).send({
         success: false,
         message: "user has no access for this operation.",
@@ -417,6 +418,66 @@ const ApproveCollectionHandler = async (
   }
 };
 
+const GetAllEventsHandler = async (
+  request: FastifyRequest,
+  reply: FastifyReply
+) => {
+  try {
+    const collEvents = request.mongo.client.db(DB).collection(COLL_EVENTS);
+    
+    const result = await collEvents.find({ status: { $in: ["active", "ended"] } }).toArray();
+
+    if (result.length === 0) {
+      return reply.status(404).send({
+        success: false,
+        message: "No events found.",
+      });
+    }
+
+    return reply.status(200).send({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    console.error("Error fetching all events:", err);
+    return reply.status(500).send({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const GetAllCollectionHandler = async (
+  request: FastifyRequest<{ Querystring: GetCollectionQuery }>,
+  reply: FastifyReply
+) => {
+  try {
+    const { eventId, pageIndex, pageSize } = request.query;
+    const skip = Number(pageIndex) * Number(pageSize);
+    const limit = Number(pageSize);
+
+    const collContributors = request.mongo.client.db(process.env.DB_NAME!).collection(COLL_CONTRIBUTORS);
+
+    const query = { eventId };
+
+    const [totalCount, data] = await Promise.all([
+      collContributors.countDocuments(query),
+      collContributors.find(query).sort({ $natural: -1 }).skip(skip).limit(limit).toArray()
+    ]);
+
+    return reply.send({
+      success: true,
+      data,
+      totalCount,
+    });
+  } catch (err) {
+    console.error("Error fetching collections:", err);
+    return reply.status(500).send({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
 export {
   CreateEventHandler,
   UpdateEventHandler,
@@ -425,4 +486,6 @@ export {
   GetEventHandler,
   AddCollectionHandler,
   ApproveCollectionHandler,
+  GetAllEventsHandler,
+  GetAllCollectionHandler
 };

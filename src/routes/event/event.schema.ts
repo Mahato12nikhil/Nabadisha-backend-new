@@ -1,5 +1,6 @@
 import { RouteShorthandOptions } from "fastify";
 import { IEventManagement } from "../../models/event";
+import { DEFAULT_PAGE_SIZE } from "../../utils/config";
 
 const EventManagementReqOpts = {
   type: "object",
@@ -295,6 +296,61 @@ const ApproveCollectionReqOpts: RouteShorthandOptions = {
     },
   },
 };
+
+const GetAllEventsReqOpts: RouteShorthandOptions={
+  schema: {
+    security: [{ bearerAuth: [] }],
+    tags: ["Events"],
+    headers: {
+      type: "object",
+      required: ["authorization"],
+      properties: {
+        authorization: { type: "string"},
+      },
+    },
+    response: {
+      200: {
+        type: "object",
+        required: ["success", "data"],
+        properties: {
+          success: { type: "boolean" },
+          data: { type: "array" },
+        },
+      },
+    },
+  },
+}
+export interface GetCollectionQuery {
+  eventId: string;
+  pageIndex: number;
+  pageSize: number;
+}
+const GetCollectionReqOpts: RouteShorthandOptions = {
+  schema: {
+    tags: ["Events"],
+    security: [{ bearerAuth: [] }],
+    querystring: {
+      type: "object",
+      required: ["eventId"],
+      properties: {
+        eventId: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
+        pageIndex: { type: "number", default: 0 },
+        pageSize: { type: "number", default: DEFAULT_PAGE_SIZE }
+      }
+    },
+    response: {
+      200: {
+        type: "object",
+        required: ["success", "data","totalCount"],
+        properties: {
+          success: { type: "boolean" },
+          data: { type: "array" },
+          totalCount:{type:"number"}
+        }
+      }
+    },
+  },
+};
 export {
   CreateEventReqOpts,
   UpdateEventReqOpts,
@@ -302,5 +358,7 @@ export {
   UpdateExpenseReqOpts,
   AddCollectionReqOpts,
   ApproveCollectionReqOpts,
+  GetAllEventsReqOpts,
+  GetCollectionReqOpts
 };
 export type { CreateExpense, UpdateExpense, AddCollection, ApproveCollection };

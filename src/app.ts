@@ -25,7 +25,9 @@ export type AppOptions = {
     // register helmet
     fastify.register(FastifyHelmet);
     // register cors
-    fastify.register(FastifyCors);
+    fastify.register(FastifyCors,{
+        origin: "*"
+    });
     // register compression
     fastify.register(FastifyCompress);
     // register static file serve
