@@ -345,7 +345,9 @@ const GetCollectionReqOpts: RouteShorthandOptions = {
         properties: {
           success: { type: "boolean" },
           data: { type: "array" },
-          totalCount:{type:"number"}
+          totalCount:{type:"number"},
+          totalCollection:{type:"number"},
+          currentUserCollection:{type:"number"},
         }
       }
     },

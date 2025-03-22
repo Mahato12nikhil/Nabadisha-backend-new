@@ -452,9 +452,10 @@ const GetAllCollectionHandler = async (
   reply: FastifyReply
 ) => {
   try {
-    const { eventId, pageIndex, pageSize } = request.query;
-    const skip = Number(pageIndex) * Number(pageSize);
-    const limit = Number(pageSize);
+    const { eventId } = request.query;
+    //paging is disabled as of now
+    // const skip = Number(pageIndex) * Number(pageSize);
+    // const limit = Number(pageSize);
 
     const collContributors = request.mongo.client.db(process.env.DB_NAME!).collection(COLL_CONTRIBUTORS);
 
@@ -462,13 +463,40 @@ const GetAllCollectionHandler = async (
 
     const [totalCount, data] = await Promise.all([
       collContributors.countDocuments(query),
-      collContributors.find(query).sort({ $natural: -1 }).skip(skip).limit(limit).toArray()
+      //collContributors.find(query).sort({ $natural: -1 }).skip(skip).limit(limit).toArray()
+      //for now paging is disabled, later it will be taken care of
+      collContributors.find(query).sort({ $natural: -1 }).toArray(),
     ]);
+    const totalsAgg = await collContributors
+    .aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: null,
+          totalCollection: { $sum: "$amount" },
+          currentUserCollection: {
+            $sum: {
+              $cond: [
+                { $eq: ["$createdBy", request.user.username] },
+                "$amount",
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ])
+    .toArray();
+
+  const totalCollection = totalsAgg[0]?.totalCollection || 0;
+  const currentUserCollection = totalsAgg[0]?.currentUserCollection || 0;
 
     return reply.send({
       success: true,
       data,
       totalCount,
+      totalCollection,
+      currentUserCollection
     });
   } catch (err) {
     console.error("Error fetching collections:", err);
