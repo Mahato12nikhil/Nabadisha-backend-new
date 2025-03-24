@@ -172,7 +172,7 @@ const CreateExpenseReqOpts: RouteShorthandOptions = {
     },
     body: {
       type: "object",
-      required: ["name", "amount"],
+      required: ["name", "amount", "eventId"],
       properties: {
         eventId: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
         name: { type: "string" },
@@ -353,6 +353,50 @@ const GetCollectionReqOpts: RouteShorthandOptions = {
     },
   },
 };
+export interface GetExpensesReq {
+  Querystring: {
+    eventId: string;
+  };
+}
+const GetExpensesReqOpts = {
+  schema: {
+    security: [{ bearerAuth: [] }],
+    tags: ["Events"],
+    querystring: {
+      type: "object",
+      required: ["eventId"],
+      properties: {
+        eventId: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
+      },
+    },
+    response: {
+      200: {
+        type: "object",
+        required: ["success", "totalExpense", "currentUserExpense", "data"],
+        properties: {
+          success: { type: "boolean" },
+          totalExpense: { type: "number" },
+          currentUserExpense: { type: "number" },
+          data: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                _id: { type: "string" },
+                name: { type: "string" },
+                eventId: { type: "string" },
+                amount: { type: "number" },
+                createdAt: { type: "string" },
+                createdBy: { type: "string" },
+                description: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
 export {
   CreateEventReqOpts,
   UpdateEventReqOpts,
@@ -361,6 +405,7 @@ export {
   AddCollectionReqOpts,
   ApproveCollectionReqOpts,
   GetAllEventsReqOpts,
-  GetCollectionReqOpts
+  GetCollectionReqOpts,
+  GetExpensesReqOpts
 };
 export type { CreateExpense, UpdateExpense, AddCollection, ApproveCollection };

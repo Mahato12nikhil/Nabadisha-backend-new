@@ -5,6 +5,7 @@ import {
   CreateEvent,
   CreateExpense,
   GetCollectionQuery,
+  GetExpensesReq,
   UpdateEvent,
   UpdateExpense,
 } from "./event.schema";
@@ -459,7 +460,13 @@ const GetAllCollectionHandler = async (
 
     const collContributors = request.mongo.client.db(process.env.DB_NAME!).collection(COLL_CONTRIBUTORS);
 
-    const query = { eventId };
+    const query = {
+      eventId,
+      $or: [
+        { approved: true },
+        { createdBy: request.user.username },
+      ],
+    };
 
     const [totalCount, data] = await Promise.all([
       collContributors.countDocuments(query),
@@ -469,7 +476,7 @@ const GetAllCollectionHandler = async (
     ]);
     const totalsAgg = await collContributors
     .aggregate([
-      { $match: query },
+      { $match: {eventId, approved:true}},
       {
         $group: {
           _id: null,
@@ -506,6 +513,39 @@ const GetAllCollectionHandler = async (
     });
   }
 };
+
+const GetAllExpensesHandler = async (
+  request: FastifyRequest<GetExpensesReq>,
+  reply: FastifyReply
+) => {
+  try {
+    const collExpenses = request?.mongo.client.db(DB).collection(COLL_EXPENSES);
+    const { eventId } = request.query;
+
+    const eventObjectId = new ObjectId(eventId);
+    
+    // Fetch all expenses for the event
+    const expenses = await collExpenses.find({ eventId: eventObjectId }).toArray();
+    
+    // Calculate total expense and current user's expenses
+    const totalExpense = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const currentUserExpense = expenses
+      .filter((exp) => exp.createdBy === request.user.username)
+      .reduce((sum, exp) => sum + exp.amount, 0);
+
+    return reply.status(200).send({
+      success: true,
+      totalExpense,
+      currentUserExpense,
+      data: expenses,
+    });
+  } catch (err) {
+    return reply.status(500).send({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
 export {
   CreateEventHandler,
   UpdateEventHandler,
@@ -515,5 +555,6 @@ export {
   AddCollectionHandler,
   ApproveCollectionHandler,
   GetAllEventsHandler,
-  GetAllCollectionHandler
+  GetAllCollectionHandler,
+  GetAllExpensesHandler
 };
