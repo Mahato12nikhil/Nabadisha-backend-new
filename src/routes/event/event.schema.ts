@@ -4,10 +4,10 @@ import { DEFAULT_PAGE_SIZE } from "../../utils/config";
 
 const EventManagementReqOpts = {
   type: "object",
-  required: ["president", "treasurer", "vice_president", "vice_secretary"],
+  required: ["president", "treasurers", "vice_president", "vice_secretary"],
   properties: {
     president: { type: "string" },
-    treasurer: { type: "string" },
+    treasurers: { type: "array", items:{type:'string'} },
     secretary: { type: "string" },
     vice_president: { type: "string" },
     vice_secretary: { type: "string" },
@@ -230,7 +230,7 @@ interface AddCollection {
   Body: {
     eventId: string;
     amount: number;
-    contributor: string;
+    name: string;
   };
 }
 const AddCollectionReqOpts: RouteShorthandOptions = {
@@ -239,11 +239,11 @@ const AddCollectionReqOpts: RouteShorthandOptions = {
     tags: ["Events"],
     body: {
       type: "object",
-      required: ["eventId", "amount", "contributor"],
+      required: ["eventId", "amount", "name"],
       properties: {
         eventId: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
         amount: { type: "number" },
-        contributor: { type: "string" },
+        name: { type: "string" },
       },
     },
     response: {
@@ -262,8 +262,9 @@ interface ApproveCollection {
   Headers: {
     authorization: string;
   };
-  Params: {
-    collectionId: string;
+  Querystring: {
+    id: string;
+    amountType:string
   };
 }
 const ApproveCollectionReqOpts: RouteShorthandOptions = {
@@ -277,11 +278,12 @@ const ApproveCollectionReqOpts: RouteShorthandOptions = {
         authorization: { type: "string" },
       },
     },
-    body: {
+    querystring: {
       type: "object",
-      required: ["collectionId"],
+      required: ["id", "amountType"],
       properties: {
-        collectionId: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
+        id: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
+        amountType: { type: "string" },
       },
     },
     response: {
@@ -389,6 +391,52 @@ const GetExpensesReqOpts = {
                 createdAt: { type: "string" },
                 createdBy: { type: "string" },
                 description: { type: "string" },
+                approved:{type:'boolean'},
+                approvedBy:{type:'string'},
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+interface GetAllPendingAmounts{
+  Querystring:{
+    eventId:string,
+  }
+}
+const GetAllPendingAmountReqOpts= {
+  schema: {
+    security: [{ bearerAuth: [] }],
+    tags: ["Events"],
+    querystring: {
+      type: "object",
+      required: ["eventId"],
+      properties: {
+        eventId: { type: "string", pattern: "^[a-fA-F0-9]{24}$" },
+      },
+    },
+    response: {
+      200: {
+        type: "object",
+        required: ["success", "data"],
+        properties: {
+          success: { type: "boolean" },
+          data: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                _id: { type: "string" },
+                name: { type: "string" },
+                eventId: { type: "string" },
+                amount: { type: "number" },
+                createdAt: { type: "string" },
+                createdBy: { type: "string" },
+                description: { type: "string" },
+                amountType:{type: "string" }
               },
             },
           },
@@ -406,6 +454,7 @@ export {
   ApproveCollectionReqOpts,
   GetAllEventsReqOpts,
   GetCollectionReqOpts,
-  GetExpensesReqOpts
+  GetExpensesReqOpts,
+  GetAllPendingAmountReqOpts
 };
-export type { CreateExpense, UpdateExpense, AddCollection, ApproveCollection };
+export type { CreateExpense, UpdateExpense, AddCollection, ApproveCollection, GetAllPendingAmounts };

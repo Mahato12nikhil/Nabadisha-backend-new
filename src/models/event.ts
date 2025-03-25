@@ -12,7 +12,7 @@ export interface IEvent{
 }
 export interface IEventManagement{
     president:string,
-    treasurer:string,
+    treasurers:string,
     secretary:string,
     vice_president:string,
     vice_secretary:string

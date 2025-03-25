@@ -4,6 +4,7 @@ import {
   ApproveCollection,
   CreateEvent,
   CreateExpense,
+  GetAllPendingAmounts,
   GetCollectionQuery,
   GetExpensesReq,
   UpdateEvent,
@@ -14,6 +15,8 @@ import {
   COLL_EVENTS,
   COLL_EXPENSES,
   EventStatus,
+  FIELD_COLLECTION,
+  FIELD_EXPENSE,
 } from "../../utils/constants";
 import { ObjectId } from "@fastify/mongodb";
 import { IEvent } from "../../models/event";
@@ -192,6 +195,7 @@ const CreateExpenseHandler = async (
       name,
       eventId: new ObjectId(eventId),
       amount,
+      approved:false,
       createdAt: timestamp,
       createdBy: request?.user.username,
       ...(description && { description }),
@@ -308,7 +312,7 @@ const AddCollectionHandler = async (
       .collection(COLL_CONTRIBUTORS);
     const collEvents = request?.mongo.client.db(DB).collection(COLL_EVENTS);
 
-    const { eventId, contributor, amount } = request.body;
+    const { eventId, name, amount } = request.body;
     const event = await collEvents.findOne<IEvent>({
       _id: new ObjectId(eventId),
     });
@@ -320,14 +324,11 @@ const AddCollectionHandler = async (
       });
     }
 
-    const treasurer = event.eventManagement?.treasurer;
-
     const timestamp = request.getCurrentTimestamp();
     let doc = {
-      eventId,
+      eventId : new ObjectId(eventId),
       amount,
-      contributor,
-      treasurer,
+      name,
       approved: false,
       createdAt: timestamp,
       createdBy: request?.user.username,
@@ -354,31 +355,62 @@ const AddCollectionHandler = async (
 };
 
 type ApprvClltionReq = FastifyRequest<ApproveCollection>;
-const ApproveCollectionHandler = async (
+
+const ApproveAmountHandler = async (
   request: ApprvClltionReq,
   reply: FastifyReply
 ) => {
   try {
-    const collContributors = request?.mongo.client
-      .db(DB)
-      .collection(COLL_CONTRIBUTORS);
+    const db = request.mongo.client.db(DB);
+    const collContributors = db.collection(COLL_CONTRIBUTORS);
+    const collExpenses = db.collection(COLL_EXPENSES);
+    const collEvents = db.collection(COLL_EVENTS);
 
-    const { collectionId } = request.params;
-    const contributor = await collContributors.findOne({
-      _id: new ObjectId(collectionId),
-    });
+    const { id, amountType } = request.query;
 
-    if (!contributor) {
+    let eventObjectId: string | null = null;
+
+    if (amountType === FIELD_COLLECTION) {
+      const contributor = await collContributors.findOne({ _id: new ObjectId(id) });
+      if (!contributor) {
+        return reply.status(404).send({
+          success: false,
+          message: "Collection details not found.",
+        });
+      }
+      eventObjectId = contributor.eventId; 
+    } else if (amountType === FIELD_EXPENSE) {
+      const expense = await collExpenses.findOne({ _id: new ObjectId(id) });
+      if (!expense) {
+        return reply.status(404).send({
+          success: false,
+          message: "Expense details not found.",
+        });
+      }
+      eventObjectId = expense.eventId; 
+    }
+
+    if (!eventObjectId) {
+      return reply.status(400).send({
+        success: false,
+        message: "Event ID not associated with this record.",
+      });
+    }
+
+    // Fetch event details
+    const event = await collEvents.findOne({ _id: new ObjectId(eventObjectId) });
+    if (!event) {
       return reply.status(404).send({
         success: false,
-        message: "Collection details not found.",
+        message: "Associated event not found.",
       });
     }
 
     const roles = request.user.roles || [];
-    const treasurerName = contributor.treasurer;
+    const treasurers = event.eventManagement?.treasurers || [];
 
-    if (treasurerName !== request.user.username && roles.indexOf("admin") !== -1) {
+    // Authorization check
+    if (!treasurers.includes(request.user.username) && !roles.includes("admin")) {
       return reply.status(401).send({
         success: false,
         message: "You are not authorized to approve this.",
@@ -395,8 +427,11 @@ const ApproveCollectionHandler = async (
       updatedBy: approvedBy,
     };
 
-    const result = await collContributors.updateOne(
-      { _id: new ObjectId(collectionId) },
+    // Choose correct collection to update
+    const targetCollection = amountType === FIELD_COLLECTION ? collContributors : collExpenses;
+
+    const result = await targetCollection.updateOne(
+      { _id: new ObjectId(id) },
       { $set: updateDoc }
     );
 
@@ -412,12 +447,15 @@ const ApproveCollectionHandler = async (
       });
     }
   } catch (err) {
+    console.error("Error in ApproveAmountHandler:", err);
     return reply.status(500).send({
       success: false,
       message: "Internal server error",
     });
   }
 };
+
+
 
 const GetAllEventsHandler = async (
   request: FastifyRequest,
@@ -461,7 +499,7 @@ const GetAllCollectionHandler = async (
     const collContributors = request.mongo.client.db(process.env.DB_NAME!).collection(COLL_CONTRIBUTORS);
 
     const query = {
-      eventId,
+      eventId: new ObjectId(eventId),
       $or: [
         { approved: true },
         { createdBy: request.user.username },
@@ -476,7 +514,7 @@ const GetAllCollectionHandler = async (
     ]);
     const totalsAgg = await collContributors
     .aggregate([
-      { $match: {eventId, approved:true}},
+      { $match: {eventId: new ObjectId(eventId), approved:true}},
       {
         $group: {
           _id: null,
@@ -546,6 +584,89 @@ const GetAllExpensesHandler = async (
     });
   }
 };
+
+const GetAllPendingAmountHandler = async (
+  request: FastifyRequest<GetAllPendingAmounts>,
+  reply: FastifyReply
+) => {
+  try {
+    const { eventId } = request.query;
+    if (!eventId) {
+      return reply.status(400).send({ success: false, message: "Event ID is required." });
+    }
+
+    let eventObjectId;
+    try {
+      eventObjectId = new ObjectId(eventId);
+    } catch (error) {
+      return reply.status(400).send({ success: false, message: "Invalid Event ID." });
+    }
+
+    const collCollections = request.mongo.client.db(DB).collection(COLL_CONTRIBUTORS);
+    const collExpenses = request.mongo.client.db(DB).collection(COLL_EXPENSES);
+    const collEvents = request.mongo.client.db(DB).collection(COLL_EVENTS);
+
+    const { username, roles } = request.user;
+    const isAdmin = roles?.includes("admin");
+    const isTreasurer = roles?.includes("treasurer");
+
+    if (!isAdmin && !isTreasurer) {
+      return reply.status(403).send({
+        success: false,
+        message: "You are not authorized.",
+      });
+    }
+
+    // Validate if the treasurer is assigned to this event
+    if (!isAdmin) {
+      const event = await collEvents.findOne({
+        _id: eventObjectId,
+        "eventManagement.treasurers": username,
+      });
+
+      if (!event) {
+        return reply.status(403).send({
+          success: false,
+          message: "You are not a treasurer for this event.",
+        });
+      }
+    }
+
+    const query = {
+      eventId: eventObjectId,
+      approved: false,
+    };
+
+    // Fetch pending collections and expenses in parallel
+    const [pendingCollections, pendingExpenses] = await Promise.all([
+      collCollections.find(query).toArray(),
+      collExpenses.find(query).toArray(),
+    ]);
+
+    // Add `amountType` field for distinction
+    const formattedCollections = pendingCollections.map((item) => ({
+      ...item,
+      amountType: "collection",
+    }));
+
+    const formattedExpenses = pendingExpenses.map((item) => ({
+      ...item,
+      amountType: "expense",
+    }));
+
+    return reply.status(200).send({
+      success: true,
+      data: [...formattedCollections, ...formattedExpenses],
+    });
+  } catch (err) {
+    console.error("Error fetching pending amounts:", err);
+    return reply.status(500).send({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 export {
   CreateEventHandler,
   UpdateEventHandler,
@@ -553,8 +674,9 @@ export {
   UpdateExpenseHandler,
   GetEventHandler,
   AddCollectionHandler,
-  ApproveCollectionHandler,
+  ApproveAmountHandler,
   GetAllEventsHandler,
   GetAllCollectionHandler,
-  GetAllExpensesHandler
+  GetAllExpensesHandler,
+  GetAllPendingAmountHandler
 };
