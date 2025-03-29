@@ -39,5 +39,6 @@ export const SWAGGER_CONFIG_OPTS: SwaggerOptions = {
     {method: 'POST', url: '/api/v1/user/login'},
     {method: 'POST', url: '/api/v1/user/reset-password'},
     {method: 'POST', url: '/api/v1/user/renewLogin'},
-    {method: 'GET', url: '/api/v1/event/getAllActiveEvents'}
+    {method: 'GET', url: '/api/v1/event/getAllActiveEvents'},
+    {method: 'GET', url: '/api/v1/content/get'},
   ]

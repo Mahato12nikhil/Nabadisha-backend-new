@@ -4,6 +4,7 @@ export const COLL_PERMISSIONS="permissions";
 export const COLL_EVENTS="events";
 export const COLL_EXPENSES="expenses";
 export const COLL_CONTRIBUTORS="contributors";
+export const COLL_CONTENT="contents";
 
 export const FIELD_COLLECTION="collection";
 export const FIELD_EXPENSE="expense";
